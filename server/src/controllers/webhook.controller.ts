@@ -7,11 +7,22 @@ export const verifyWebhook = (req: Request, res: Response) => {
   const token = req.query['hub.verify_token'];
   const challenge = req.query['hub.challenge'];
 
+  console.log('🔍 Webhook verification request:', {
+    mode,
+    token,
+    challenge,
+    expectedToken: process.env.META_VERIFY_TOKEN,
+    tokensMatch: token === process.env.META_VERIFY_TOKEN
+  });
+
   if (mode === 'subscribe' && token === process.env.META_VERIFY_TOKEN) {
-    console.log('✅ Webhook verified');
+    console.log('✅ Webhook verified successfully');
     res.status(200).send(challenge);
   } else {
     console.log('❌ Webhook verification failed');
+    console.log('   Mode:', mode, '(expected: subscribe)');
+    console.log('   Token:', token);
+    console.log('   Expected:', process.env.META_VERIFY_TOKEN);
     res.sendStatus(403);
   }
 };

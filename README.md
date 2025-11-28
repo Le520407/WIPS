@@ -4,12 +4,23 @@ WhatsApp Business API 集成平台，支持 Facebook 登录、消息管理和模
 
 ## ✨ 功能特性
 
+- ✅ **Demo 模式** - 无需 Meta 认证即可测试所有功能
 - ✅ Facebook OAuth 登录
 - ✅ WhatsApp Business API 集成
 - ✅ 实时消息收发
 - ✅ 消息模板管理
 - ✅ Dashboard 数据统计
 - ✅ Webhook 事件处理
+
+## 🎭 立即体验 Demo 模式
+
+**无需任何配置，立即测试！**
+
+1. 访问 http://localhost:5173/login
+2. 点击 "使用 Demo 模式登录"
+3. 开始体验所有功能
+
+详细说明请查看 [DEMO_MODE.md](DEMO_MODE.md)
 
 ## 🚀 快速开始
 
@@ -19,19 +30,35 @@ WhatsApp Business API 集成平台，支持 Facebook 登录、消息管理和模
 - **前端:** http://localhost:5173
 - **后端:** http://localhost:3001
 
-### 配置 Meta 凭证
+### 两种使用方式
 
+#### 方式 1: Demo 模式（推荐新手）
+- ✅ 无需配置
+- ✅ 一键登录
+- ✅ 模拟所有功能
+- 📖 查看 [DEMO_MODE.md](DEMO_MODE.md)
+
+#### 方式 2: 正常模式（需要 Meta 认证）
 1. 编辑 `server/.env` 和 `client/.env` 文件
 2. 填写你的 Meta 应用凭证
 3. 重启服务器
-
-详细步骤请查看 [QUICK_START.md](QUICK_START.md)
+4. 📖 查看 [QUICK_START.md](QUICK_START.md)
 
 ## 📚 文档
 
-- **[快速开始指南](QUICK_START.md)** - 5分钟快速上手
-- **[完整设置指南](SETUP.md)** - 详细配置说明
-- **[API 测试文档](API_TESTING.md)** - API 接口测试
+### 快速开始
+- **[🎭 Demo 模式指南](docs/11-26/DEMO_MODE.md)** - 无需配置，立即体验
+- **[🚀 快速开始](docs/11-26/QUICK_START.md)** - 5分钟快速上手
+- **[⚡ Webhook 快速设置](docs/11-27/QUICK_WEBHOOK_SETUP.md)** - 5分钟配置消息接收
+
+### 详细指南
+- **[📘 完整设置指南](docs/11-26/SETUP.md)** - 详细配置说明
+- **[📡 Webhook 设置指南](docs/11-27/WEBHOOK_SETUP_GUIDE.md)** - 完整的 Webhook 配置
+- **[📸 Webhook 可视化指南](docs/11-27/WEBHOOK_VISUAL_GUIDE.md)** - 图文并茂的设置步骤
+
+### 其他文档
+- **[🧪 API 测试文档](docs/11-26/API_TESTING.md)** - API 接口测试
+- **[📋 文档索引](docs/11-26/README.md)** - 所有文档列表
 
 ## 🛠 技术栈
 

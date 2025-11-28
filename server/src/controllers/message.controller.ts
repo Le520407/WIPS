@@ -1,15 +1,38 @@
 import { Response } from 'express';
 import { AuthRequest } from '../middleware/auth.middleware';
-import { sendWhatsAppMessage } from '../services/whatsapp.service';
+import { sendWhatsAppMessage, uploadMediaToWhatsApp, sendMediaMessage } from '../services/whatsapp.service';
+import Message from '../models/Message';
+import Conversation from '../models/Conversation';
 
 export const getMessages = async (req: AuthRequest, res: Response) => {
   try {
     const { conversationId } = req.query;
     
-    // TODO: Fetch messages from database
-    const messages: any[] = [];
+    let whereClause: any = { user_id: req.user!.id };
     
-    res.json({ messages });
+    // If conversationId is provided, get the phone number and filter by it
+    if (conversationId) {
+      const conversation = await Conversation.findByPk(conversationId as string);
+      if (conversation && conversation.user_id === req.user!.id) {
+        // Filter messages by phone number (either to or from)
+        const { Op } = require('sequelize');
+        whereClause = {
+          user_id: req.user!.id,
+          [Op.or]: [
+            { to_number: conversation.phone_number },
+            { from_number: conversation.phone_number }
+          ]
+        };
+      }
+    }
+    
+    const messages = await Message.findAll({
+      where: whereClause,
+      order: [['createdAt', 'ASC']], // Changed to ASC for chronological order
+      limit: 100,
+    });
+    
+    res.json({ messages: messages.map(m => m.toJSON()) });
   } catch (error) {
     console.error('Get messages error:', error);
     res.status(500).json({ error: 'Failed to fetch messages' });
@@ -18,17 +41,56 @@ export const getMessages = async (req: AuthRequest, res: Response) => {
 
 export const sendMessage = async (req: AuthRequest, res: Response) => {
   try {
-    const { to, message, type = 'text' } = req.body;
+    const { to, message, type = 'text', mediaUrl, caption } = req.body;
     
-    if (!to || !message) {
-      return res.status(400).json({ error: 'Missing required fields' });
+    if (!to) {
+      return res.status(400).json({ error: 'Recipient number is required' });
     }
 
-    const result = await sendWhatsAppMessage(to, message, type);
+    if (type === 'text' && !message) {
+      return res.status(400).json({ error: 'Message content is required for text messages' });
+    }
+
+    if (['image', 'video', 'audio', 'document'].includes(type) && !mediaUrl) {
+      return res.status(400).json({ error: 'Media URL is required for media messages' });
+    }
+
+    // Normalize phone number (remove + if present for storage)
+    const normalizedPhone = to.replace(/^\+/, '');
+
+    const result = await sendWhatsAppMessage(to, message, type, mediaUrl, caption);
     
-    // TODO: Save message to database
+    // Save message to database
+    const savedMessage = await Message.create({
+      user_id: req.user!.id,
+      from_number: process.env.WHATSAPP_PHONE_NUMBER_ID || '',
+      to_number: normalizedPhone,
+      content: message || caption || '',
+      type,
+      status: 'sent',
+      message_id: result.messages[0].id,
+      media_url: mediaUrl,
+    });
+
+    // Update or create conversation (use normalized phone)
+    const displayMessage = type === 'text' ? message : `[${type.toUpperCase()}] ${caption || ''}`;
+    const [conversation, created] = await Conversation.findOrCreate({
+      where: { user_id: req.user!.id, phone_number: normalizedPhone },
+      defaults: {
+        last_message: displayMessage,
+        last_message_time: new Date(),
+      },
+    });
+
+    // If conversation already exists, update it
+    if (!created) {
+      await conversation.update({
+        last_message: displayMessage,
+        last_message_time: new Date(),
+      });
+    }
     
-    res.json({ success: true, messageId: result.messages[0].id });
+    res.json({ success: true, messageId: result.messages[0].id, message: savedMessage.toJSON() });
   } catch (error) {
     console.error('Send message error:', error);
     res.status(500).json({ error: 'Failed to send message' });
@@ -37,12 +99,333 @@ export const sendMessage = async (req: AuthRequest, res: Response) => {
 
 export const getConversations = async (req: AuthRequest, res: Response) => {
   try {
-    // TODO: Fetch conversations from database
-    const conversations: any[] = [];
+    const conversations = await Conversation.findAll({
+      where: { user_id: req.user!.id },
+      order: [['last_message_time', 'DESC']],
+    });
     
-    res.json({ conversations });
+    res.json({ conversations: conversations.map(c => c.toJSON()) });
   } catch (error) {
     console.error('Get conversations error:', error);
     res.status(500).json({ error: 'Failed to fetch conversations' });
+  }
+};
+
+export const markConversationAsRead = async (req: AuthRequest, res: Response) => {
+  try {
+    const { conversationId } = req.params;
+    
+    const conversation = await Conversation.findOne({
+      where: { 
+        id: conversationId,
+        user_id: req.user!.id 
+      }
+    });
+    
+    if (!conversation) {
+      return res.status(404).json({ error: 'Conversation not found' });
+    }
+    
+    await conversation.update({ unread_count: 0 });
+    
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Mark conversation as read error:', error);
+    res.status(500).json({ error: 'Failed to mark conversation as read' });
+  }
+};
+
+export const uploadMedia = async (req: AuthRequest, res: Response) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ error: 'No file uploaded' });
+    }
+
+    const { buffer, mimetype, originalname } = req.file;
+    
+    // Upload to WhatsApp
+    const mediaId = await uploadMediaToWhatsApp(buffer, mimetype, originalname);
+    
+    res.json({ 
+      success: true, 
+      mediaId,
+      filename: originalname,
+      mimeType: mimetype
+    });
+  } catch (error) {
+    console.error('Upload media error:', error);
+    res.status(500).json({ error: 'Failed to upload media' });
+  }
+};
+
+export const sendMediaMessageController = async (req: AuthRequest, res: Response) => {
+  try {
+    const { to, mediaId, type, caption, filename } = req.body;
+    
+    if (!to || !mediaId || !type) {
+      return res.status(400).json({ error: 'Missing required fields' });
+    }
+
+    // Normalize phone number
+    const normalizedPhone = to.replace(/^\+/, '');
+
+    const result = await sendMediaMessage(to, mediaId, type, caption, filename);
+    
+    // Save message to database
+    const savedMessage = await Message.create({
+      user_id: req.user!.id,
+      from_number: process.env.WHATSAPP_PHONE_NUMBER_ID || '',
+      to_number: normalizedPhone,
+      content: caption || '',
+      type,
+      status: 'sent',
+      message_id: result.messages[0].id,
+      media_id: mediaId,
+    });
+
+    // Update conversation
+    const displayMessage = `[${type.toUpperCase()}] ${caption || ''}`;
+    const [conversation, created] = await Conversation.findOrCreate({
+      where: { user_id: req.user!.id, phone_number: normalizedPhone },
+      defaults: {
+        last_message: displayMessage,
+        last_message_time: new Date(),
+      },
+    });
+
+    if (!created) {
+      await conversation.update({
+        last_message: displayMessage,
+        last_message_time: new Date(),
+      });
+    }
+    
+    res.json({ success: true, messageId: result.messages[0].id, message: savedMessage.toJSON() });
+  } catch (error) {
+    console.error('Send media message error:', error);
+    res.status(500).json({ error: 'Failed to send media message' });
+  }
+};
+
+export const getMediaUrl = async (req: AuthRequest, res: Response) => {
+  try {
+    const { mediaId } = req.params;
+    
+    if (!mediaId) {
+      return res.status(400).json({ error: 'Media ID is required' });
+    }
+
+    const { getMediaUrl: getMediaUrlService, downloadMedia } = require('../services/whatsapp.service');
+    
+    // Get media URL from WhatsApp
+    const mediaUrl = await getMediaUrlService(mediaId);
+    
+    // Download media with authentication
+    const mediaData = await downloadMedia(mediaUrl);
+    
+    // Send media directly to client
+    res.set('Content-Type', mediaData.contentType);
+    res.set('Cache-Control', 'public, max-age=86400'); // Cache for 1 day
+    res.send(Buffer.from(mediaData.data));
+  } catch (error) {
+    console.error('Get media error:', error);
+    res.status(500).json({ error: 'Failed to get media' });
+  }
+};
+
+export const sendInteractiveButtonsController = async (req: AuthRequest, res: Response) => {
+  try {
+    const { to, bodyText, buttons } = req.body;
+    
+    if (!to || !bodyText || !buttons || !Array.isArray(buttons)) {
+      return res.status(400).json({ error: 'Missing required fields' });
+    }
+
+    // Normalize phone number
+    const normalizedPhone = to.replace(/^\+/, '');
+
+    const { sendInteractiveButtons } = require('../services/whatsapp.service');
+    const result = await sendInteractiveButtons(to, bodyText, buttons);
+    
+    // Save message to database
+    const savedMessage = await Message.create({
+      user_id: req.user!.id,
+      from_number: process.env.WHATSAPP_PHONE_NUMBER_ID || '',
+      to_number: normalizedPhone,
+      content: bodyText,
+      type: 'interactive',
+      status: 'sent',
+      message_id: result.messages[0].id,
+    });
+
+    // Update conversation
+    const displayMessage = `[BUTTONS] ${bodyText}`;
+    const [conversation, created] = await Conversation.findOrCreate({
+      where: { user_id: req.user!.id, phone_number: normalizedPhone },
+      defaults: {
+        last_message: displayMessage,
+        last_message_time: new Date(),
+      },
+    });
+
+    if (!created) {
+      await conversation.update({
+        last_message: displayMessage,
+        last_message_time: new Date(),
+      });
+    }
+    
+    res.json({ success: true, messageId: result.messages[0].id, message: savedMessage.toJSON() });
+  } catch (error: any) {
+    console.error('Send interactive buttons error:', error);
+    res.status(500).json({ error: error.message || 'Failed to send interactive buttons' });
+  }
+};
+
+export const sendInteractiveListController = async (req: AuthRequest, res: Response) => {
+  try {
+    const { to, bodyText, buttonText, sections } = req.body;
+    
+    if (!to || !bodyText || !buttonText || !sections || !Array.isArray(sections)) {
+      return res.status(400).json({ error: 'Missing required fields' });
+    }
+
+    // Normalize phone number
+    const normalizedPhone = to.replace(/^\+/, '');
+
+    const { sendInteractiveList } = require('../services/whatsapp.service');
+    const result = await sendInteractiveList(to, bodyText, buttonText, sections);
+    
+    // Save message to database
+    const savedMessage = await Message.create({
+      user_id: req.user!.id,
+      from_number: process.env.WHATSAPP_PHONE_NUMBER_ID || '',
+      to_number: normalizedPhone,
+      content: bodyText,
+      type: 'interactive',
+      status: 'sent',
+      message_id: result.messages[0].id,
+    });
+
+    // Update conversation
+    const displayMessage = `[LIST] ${bodyText}`;
+    const [conversation, created] = await Conversation.findOrCreate({
+      where: { user_id: req.user!.id, phone_number: normalizedPhone },
+      defaults: {
+        last_message: displayMessage,
+        last_message_time: new Date(),
+      },
+    });
+
+    if (!created) {
+      await conversation.update({
+        last_message: displayMessage,
+        last_message_time: new Date(),
+      });
+    }
+    
+    res.json({ success: true, messageId: result.messages[0].id, message: savedMessage.toJSON() });
+  } catch (error: any) {
+    console.error('Send interactive list error:', error);
+    res.status(500).json({ error: error.message || 'Failed to send interactive list' });
+  }
+};
+
+export const sendInteractiveCTAController = async (req: AuthRequest, res: Response) => {
+  try {
+    const { to, bodyText, buttonText, url } = req.body;
+    
+    if (!to || !bodyText || !buttonText || !url) {
+      return res.status(400).json({ error: 'Missing required fields' });
+    }
+
+    // Normalize phone number
+    const normalizedPhone = to.replace(/^\+/, '');
+
+    const { sendInteractiveCTA } = require('../services/whatsapp.service');
+    const result = await sendInteractiveCTA(to, bodyText, buttonText, url);
+    
+    // Save message to database
+    const savedMessage = await Message.create({
+      user_id: req.user!.id,
+      from_number: process.env.WHATSAPP_PHONE_NUMBER_ID || '',
+      to_number: normalizedPhone,
+      content: bodyText,
+      type: 'interactive',
+      status: 'sent',
+      message_id: result.messages[0].id,
+    });
+
+    // Update conversation
+    const displayMessage = `[CTA] ${bodyText}`;
+    const [conversation, created] = await Conversation.findOrCreate({
+      where: { user_id: req.user!.id, phone_number: normalizedPhone },
+      defaults: {
+        last_message: displayMessage,
+        last_message_time: new Date(),
+      },
+    });
+
+    if (!created) {
+      await conversation.update({
+        last_message: displayMessage,
+        last_message_time: new Date(),
+      });
+    }
+    
+    res.json({ success: true, messageId: result.messages[0].id, message: savedMessage.toJSON() });
+  } catch (error: any) {
+    console.error('Send interactive CTA error:', error);
+    res.status(500).json({ error: error.message || 'Failed to send interactive CTA' });
+  }
+};
+
+export const sendLocationController = async (req: AuthRequest, res: Response) => {
+  try {
+    const { to, latitude, longitude, name, address } = req.body;
+    
+    if (!to || latitude === undefined || longitude === undefined) {
+      return res.status(400).json({ error: 'Missing required fields (to, latitude, longitude)' });
+    }
+
+    // Normalize phone number
+    const normalizedPhone = to.replace(/^\+/, '');
+
+    const { sendLocation } = require('../services/whatsapp.service');
+    const result = await sendLocation(to, parseFloat(latitude), parseFloat(longitude), name, address);
+    
+    // Save message to database
+    const locationText = name || address || `Location: ${latitude}, ${longitude}`;
+    const savedMessage = await Message.create({
+      user_id: req.user!.id,
+      from_number: process.env.WHATSAPP_PHONE_NUMBER_ID || '',
+      to_number: normalizedPhone,
+      content: locationText,
+      type: 'location',
+      status: 'sent',
+      message_id: result.messages[0].id,
+    });
+
+    // Update conversation
+    const displayMessage = `[LOCATION] ${locationText}`;
+    const [conversation, created] = await Conversation.findOrCreate({
+      where: { user_id: req.user!.id, phone_number: normalizedPhone },
+      defaults: {
+        last_message: displayMessage,
+        last_message_time: new Date(),
+      },
+    });
+
+    if (!created) {
+      await conversation.update({
+        last_message: displayMessage,
+        last_message_time: new Date(),
+      });
+    }
+    
+    res.json({ success: true, messageId: result.messages[0].id, message: savedMessage.toJSON() });
+  } catch (error: any) {
+    console.error('Send location error:', error);
+    res.status(500).json({ error: error.message || 'Failed to send location' });
   }
 };

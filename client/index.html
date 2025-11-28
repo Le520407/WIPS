@@ -9,5 +9,20 @@
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
+    
+    <!-- Facebook SDK for Embedded Signup -->
+    <script>
+      window.fbAsyncInit = function() {
+        FB.init({
+          appId            : '1964783984342192',
+          autoLogAppEvents : true,
+          xfbml            : true,
+          version          : 'v24.0'
+        });
+        
+        console.log('✅ Facebook SDK v24.0 initialized');
+      };
+    </script>
+    <script async defer crossorigin="anonymous" src="https://connect.facebook.net/en_US/sdk.js"></script>
   </body>
 </html>

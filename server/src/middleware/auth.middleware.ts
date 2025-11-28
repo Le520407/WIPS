@@ -16,8 +16,14 @@ export const authMiddleware = (req: AuthRequest, res: Response, next: NextFuncti
       return res.status(401).json({ error: 'No token provided' });
     }
 
-    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as { id: string; facebookId: string };
-    req.user = decoded;
+    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as any;
+    
+    // Support both 'id' and 'userId' fields for backward compatibility
+    req.user = {
+      id: decoded.id || decoded.userId,
+      facebookId: decoded.facebookId
+    };
+    
     next();
   } catch (error) {
     return res.status(401).json({ error: 'Invalid token' });

@@ -1,22 +1,28 @@
 import { Outlet, Link, useLocation } from 'react-router-dom';
 import { LayoutDashboard, MessageSquare, FileText, LogOut } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
+import DemoModeBanner from './DemoModeBanner';
 
 const Layout = () => {
   const location = useLocation();
   const { logout, user } = useAuth();
 
+  const isDemoMode = localStorage.getItem('demo_mode') === 'true';
+  
   const navItems = [
-    { path: '/dashboard', icon: LayoutDashboard, label: '仪表板' },
-    { path: '/messages', icon: MessageSquare, label: '消息' },
-    { path: '/templates', icon: FileText, label: '模板' }
+    ...(isDemoMode ? [{ path: '/demo-info', icon: LayoutDashboard, label: 'Demo Info' }] : []),
+    { path: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
+    { path: '/messages', icon: MessageSquare, label: 'Messages' },
+    { path: '/templates', icon: FileText, label: 'Templates' }
   ];
 
   return (
-    <div className="flex h-screen bg-gray-100">
-      <aside className="w-64 bg-white shadow-md">
+    <div className="flex flex-col h-screen bg-gray-100">
+      <DemoModeBanner />
+      <div className="flex flex-1 overflow-hidden">
+        <aside className="w-64 bg-white shadow-md">
         <div className="p-6">
-          <h1 className="text-2xl font-bold text-green-600">WhatsApp 平台</h1>
+          <h1 className="text-2xl font-bold text-green-600">WhatsApp Platform</h1>
         </div>
         <nav className="mt-6">
           {navItems.map(item => (
@@ -35,10 +41,10 @@ const Layout = () => {
         <div className="absolute bottom-0 w-64 p-6 border-t">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium">{user?.name || '用户'}</p>
+              <p className="text-sm font-medium">{user?.name || 'User'}</p>
               <p className="text-xs text-gray-500">{user?.email}</p>
             </div>
-            <button onClick={logout} className="text-gray-500 hover:text-red-600">
+            <button onClick={logout} className="text-gray-500 hover:text-red-600" title="Logout">
               <LogOut className="w-5 h-5" />
             </button>
           </div>
@@ -47,6 +53,7 @@ const Layout = () => {
       <main className="flex-1 overflow-auto">
         <Outlet />
       </main>
+      </div>
     </div>
   );
 };

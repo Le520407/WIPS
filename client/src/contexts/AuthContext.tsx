@@ -24,13 +24,26 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   useEffect(() => {
     if (token) {
-      authService.getCurrentUser()
-        .then((data: any) => setUser(data.user))
-        .catch(() => {
-          localStorage.removeItem('token');
-          setToken(null);
-        })
-        .finally(() => setIsLoading(false));
+      // 检查是否是 demo 模式
+      const isDemoMode = localStorage.getItem('demo_mode') === 'true';
+      
+      if (isDemoMode) {
+        // Demo 模式：从 localStorage 获取用户信息
+        const demoUser = localStorage.getItem('demo_user');
+        if (demoUser) {
+          setUser(JSON.parse(demoUser));
+        }
+        setIsLoading(false);
+      } else {
+        // 正常模式：从 API 获取用户信息
+        authService.getCurrentUser()
+          .then((data: any) => setUser(data.user))
+          .catch(() => {
+            localStorage.removeItem('token');
+            setToken(null);
+          })
+          .finally(() => setIsLoading(false));
+      }
     } else {
       setIsLoading(false);
     }
@@ -45,6 +58,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const logout = () => {
     localStorage.removeItem('token');
+    localStorage.removeItem('demo_mode');
+    localStorage.removeItem('demo_user');
     setToken(null);
     setUser(null);
   };

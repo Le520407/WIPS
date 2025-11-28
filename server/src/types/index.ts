@@ -83,7 +83,39 @@ export interface WhatsAppMessage {
   timestamp: string;
   type: string;
   text?: { body: string };
-  image?: { id: string; mime_type: string };
+  image?: { id: string; mime_type: string; caption?: string };
+  video?: { id: string; mime_type: string; caption?: string };
+  audio?: { id: string; mime_type: string };
+  document?: { id: string; mime_type: string; filename?: string; caption?: string };
+  interactive?: {
+    type: 'button_reply' | 'list_reply';
+    button_reply?: {
+      id: string;
+      title: string;
+    };
+    list_reply?: {
+      id: string;
+      title: string;
+      description?: string;
+    };
+  };
+  location?: {
+    latitude: number;
+    longitude: number;
+    name?: string;
+    address?: string;
+  };
+  contacts?: Array<{
+    name: { formatted_name: string; first_name?: string };
+    phones?: Array<{ phone: string; type?: string }>;
+  }>;
+  reaction?: {
+    message_id: string;
+    emoji: string;
+  };
+  context?: {
+    message_id: string;
+  };
 }
 
 export interface MessageStatus {
