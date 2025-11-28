@@ -21,10 +21,10 @@ export const processWebhookMessage = async (message: WhatsAppMessage, metadata: 
       console.log('Message content:', content);
     } else if (message.type === 'interactive' && message.interactive) {
       // Handle button reply
-      if (message.interactive.type === 'button_reply') {
+      if (message.interactive.type === 'button_reply' && message.interactive.button_reply) {
         content = message.interactive.button_reply.title;
         console.log('Button reply:', content);
-      } else if (message.interactive.type === 'list_reply') {
+      } else if (message.interactive.type === 'list_reply' && message.interactive.list_reply) {
         content = message.interactive.list_reply.title;
         console.log('List reply:', content);
       } else {
@@ -53,23 +53,29 @@ export const processWebhookMessage = async (message: WhatsAppMessage, metadata: 
     // Normalize phone number (remove + if present)
     const normalizedPhone = message.from.replace(/^\+/, '');
 
-    // Check if message already exists globally (avoid duplicates)
-    const existingMessage = await Message.findOne({
-      where: { message_id: message.id }
-    });
-
-    if (existingMessage) {
-      console.log('⚠️  Message already exists, skipping:', message.id);
-      return;
-    }
-
     // Find all users who have this WhatsApp number configured
     // For now, we'll save to all users (you might want to filter by phone_number_id)
     const users = await User.findAll();
     
-    // Save message for each user (with unique message_id per user)
-    for (const user of users) {
+    // Only use the first user to avoid duplicate message issues
+    const usersToSave = users.length > 0 ? [users[0]] : [];
+    
+    // Save message for each user
+    for (const user of usersToSave) {
       try {
+        // Check if message already exists for this user (avoid duplicates)
+        const existingMessage = await Message.findOne({
+          where: { 
+            user_id: user.id,
+            message_id: message.id 
+          }
+        });
+
+        if (existingMessage) {
+          console.log('⚠️  Message already exists for user, skipping:', user.email, message.id);
+          continue;
+        }
+
         await Message.create({
           user_id: user.id,
           from_number: normalizedPhone,
@@ -77,19 +83,26 @@ export const processWebhookMessage = async (message: WhatsAppMessage, metadata: 
           content,
           type: message.type,
           status: 'received',
-          message_id: message.id + '_' + user.id, // Make message_id unique per user
+          message_id: message.id, // Keep original WhatsApp message ID
           media_id: mediaId,
           caption: caption,
         });
         
         console.log('✅ Message saved for user:', user.email);
-      } catch (error) {
-        console.error('Failed to save message for user:', user.email, error.message);
+      } catch (error: any) {
+        console.error('❌ Failed to save message for user:', user.email);
+        console.error('   Error:', error?.message || error);
+        console.error('   Message ID:', message.id);
+        if (error?.errors) {
+          error.errors.forEach((e: any) => {
+            console.error('   Field:', e.path, 'Error:', e.message);
+          });
+        }
       }
     }
 
     // Update conversations for all users
-    for (const user of users) {
+    for (const user of usersToSave) {
       // Try to find conversation with or without + prefix
       let conversation = await Conversation.findOne({
         where: { 

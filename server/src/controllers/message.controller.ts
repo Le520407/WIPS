@@ -28,11 +28,16 @@ export const getMessages = async (req: AuthRequest, res: Response) => {
     
     const messages = await Message.findAll({
       where: whereClause,
-      order: [['createdAt', 'ASC']], // Changed to ASC for chronological order
-      limit: 100,
+      order: [['createdAt', 'DESC']], // Get latest messages first
+      limit: 200, // Increased limit to ensure new messages are included
     });
     
-    res.json({ messages: messages.map(m => m.toJSON()) });
+    // Reverse to chronological order (oldest first)
+    const chronologicalMessages = messages.reverse();
+    
+    console.log(`📊 Loaded ${chronologicalMessages.length} messages for conversation`);
+    
+    res.json({ messages: chronologicalMessages.map(m => m.toJSON()) });
   } catch (error) {
     console.error('Get messages error:', error);
     res.status(500).json({ error: 'Failed to fetch messages' });

@@ -54,7 +54,7 @@ Message.init(
     },
     message_id: {
       type: DataTypes.STRING,
-      unique: true,
+      allowNull: false,
     },
     media_url: {
       type: DataTypes.STRING,
@@ -73,6 +73,13 @@ Message.init(
     sequelize,
     tableName: 'messages',
     timestamps: true,
+    indexes: [
+      {
+        unique: true,
+        fields: ['user_id', 'message_id'],
+        name: 'unique_user_message'
+      }
+    ]
   }
 );
 
@@ -81,6 +88,7 @@ Message.prototype.toJSON = function () {
   const values = { ...this.get() };
   return {
     id: values.id,
+    userId: values.user_id,
     fromNumber: values.from_number,
     toNumber: values.to_number,
     content: values.content,

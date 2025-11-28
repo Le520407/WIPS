@@ -61,6 +61,7 @@ Conversation.prototype.toJSON = function () {
   const values = { ...this.get() };
   return {
     id: values.id,
+    userId: values.user_id,
     phoneNumber: values.phone_number,
     lastMessage: values.last_message,
     lastMessageTime: values.last_message_time,
