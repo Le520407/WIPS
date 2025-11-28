@@ -10,7 +10,7 @@ const Messages = () => {
   const [selectedConversation, setSelectedConversation] = useState<string | null>(null);
   
   // Template sending
-  const [messageMode, setMessageMode] = useState<'text' | 'template' | 'media' | 'buttons' | 'list' | 'cta' | 'location'>('text');
+  const [messageMode, setMessageMode] = useState<'text' | 'template' | 'media' | 'buttons' | 'list' | 'cta' | 'location' | 'contact' | 'sticker'>('text');
   const [templates, setTemplates] = useState<any[]>([]);
   const [selectedTemplate, setSelectedTemplate] = useState<any>(null);
   const [templateVariables, setTemplateVariables] = useState<string[]>([]);
@@ -46,6 +46,18 @@ const Messages = () => {
   const [locationName, setLocationName] = useState('');
   const [locationAddress, setLocationAddress] = useState('');
   
+  // Contact
+  const [contactName, setContactName] = useState('');
+  const [contactFirstName, setContactFirstName] = useState('');
+  const [contactLastName, setContactLastName] = useState('');
+  const [contactPhone, setContactPhone] = useState('');
+  const [contactEmail, setContactEmail] = useState('');
+  const [contactCompany, setContactCompany] = useState('');
+  const [contactTitle, setContactTitle] = useState('');
+  
+  // Sticker
+  const [stickerUrl, setStickerUrl] = useState('');
+  
   // Media sending
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [filePreview, setFilePreview] = useState<string | null>(null);
@@ -68,6 +80,7 @@ const Messages = () => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const prevMessageCountRef = useRef<number>(0);
+  const lastMessageIdRef = useRef<string | null>(null);
 
   useEffect(() => {
     loadConversations();
@@ -89,13 +102,13 @@ const Messages = () => {
   useEffect(() => {
     if (!selectedConversation) return;
 
-    // Refresh messages every 3 seconds
+    // Refresh messages every 5 seconds (increased to reduce unnecessary re-renders)
     const interval = setInterval(() => {
       const conv = conversations.find(c => c.id === selectedConversation);
       if (conv) {
         refreshMessages(conv);
       }
-    }, 3000);
+    }, 5000);
 
     return () => clearInterval(interval);
   }, [selectedConversation, conversations]);
@@ -460,7 +473,27 @@ const Messages = () => {
       }
     }
 
-    try {
+    if (messageMode === 'contact' && !contactName.trim()) {
+      alert('Please enter contact name');
+      return;
+    }
+
+    if (messageMode === 'contact' && !contactPhone.trim()) {
+      alert('Please enter at least one phone number');
+      return;
+    }
+
+    if (messageMode === 'sticker' && !stickerUrl.trim()) {
+      alert('Please enter a sticker URL');
+      return;
+    }
+
+    if (messageMode === 'sticker' && !stickerUrl.match(/^https?:\/\/.+/)) {
+      alert('Please enter a valid URL (must start with http:// or https://)');
+      return;
+    }
+
+    try{
       const isDemoMode = localStorage.getItem('demo_mode') === 'true';
       
       if (isDemoMode) {
@@ -573,6 +606,37 @@ const Messages = () => {
           setLocationLongitude('');
           setLocationName('');
           setLocationAddress('');
+        } else if (messageMode === 'contact') {
+          const contacts = [{
+            name: {
+              formatted_name: contactName,
+              first_name: contactFirstName || undefined,
+              last_name: contactLastName || undefined
+            },
+            phones: contactPhone ? [{
+              phone: contactPhone,
+              type: 'MOBILE'
+            }] : undefined,
+            emails: contactEmail ? [{
+              email: contactEmail,
+              type: 'WORK'
+            }] : undefined,
+            org: (contactCompany || contactTitle) ? {
+              company: contactCompany || undefined,
+              title: contactTitle || undefined
+            } : undefined
+          }];
+          await messageService.sendContact(recipient, contacts);
+          setContactName('');
+          setContactFirstName('');
+          setContactLastName('');
+          setContactPhone('');
+          setContactEmail('');
+          setContactCompany('');
+          setContactTitle('');
+        } else if (messageMode === 'sticker') {
+          await messageService.sendSticker(recipient, undefined, stickerUrl);
+          setStickerUrl('');
         } else {
           // Send template message
           alert('Template sending via real API not implemented yet');
@@ -635,6 +699,19 @@ const Messages = () => {
     try {
       const data = await messageService.getMessages(conv.id);
       
+      // Check if messages have actually changed using ref (to avoid stale closure)
+      const lastNewMsg = data.messages[data.messages.length - 1];
+      
+      if (lastNewMsg && lastNewMsg.id === lastMessageIdRef.current) {
+        // Messages haven't changed, skip update to avoid re-rendering
+        return;
+      }
+      
+      // Update the ref with the new last message ID
+      if (lastNewMsg) {
+        lastMessageIdRef.current = lastNewMsg.id;
+      }
+      
       // Transform API messages to match frontend format
       const transformedMessages = await Promise.all(data.messages.map(async (msg: any) => {
         const isFromUs = msg.fromNumber === '803320889535856' || msg.toNumber === conv.phoneNumber;
@@ -679,6 +756,7 @@ const Messages = () => {
         };
       }));
       
+      // Only update if messages have actually changed
       setMessages(transformedMessages);
     } catch (err) {
       console.error('Failed to refresh messages:', err);
@@ -795,6 +873,10 @@ const Messages = () => {
       }
       
       setMessages(demoMessages);
+      // Update the last message ID ref
+      if (demoMessages.length > 0) {
+        lastMessageIdRef.current = demoMessages[demoMessages.length - 1].id;
+      }
       // Scroll to bottom when opening a conversation
       setTimeout(() => scrollToBottom(), 100);
     } else {
@@ -850,12 +932,31 @@ const Messages = () => {
             };
           }));
           setMessages(transformedMessages);
+          // Update the last message ID ref
+          if (transformedMessages.length > 0) {
+            lastMessageIdRef.current = transformedMessages[transformedMessages.length - 1].id;
+          }
           // Scroll to bottom when opening a conversation
           setTimeout(() => scrollToBottom(), 100);
+          
+          // Auto-mark received messages as read
+          const receivedMessages = transformedMessages.filter((msg: any) => 
+            msg.from !== 'me' && msg.status !== 'read'
+          );
+          
+          // Mark each received message as read in WhatsApp
+          receivedMessages.forEach((msg: any) => {
+            // Only mark if we have a valid WhatsApp message ID (starts with 'wamid.')
+            if (msg.id && typeof msg.id === 'string' && msg.id.startsWith('wamid.')) {
+              messageService.markAsRead(msg.id)
+                .catch((err: any) => console.error('Failed to mark message as read:', err));
+            }
+          });
         })
         .catch((err: any) => {
           console.error('Failed to load messages:', err);
           setMessages([]);
+          lastMessageIdRef.current = null;
         });
       
       // Mark conversation as read in real mode
@@ -981,8 +1082,66 @@ const Messages = () => {
                       </div>
                     )}
                     
+                    {/* Location Message */}
+                    {msg.type === 'location' && (
+                      <div className="px-4 py-3">
+                        <div className="flex items-start gap-3 p-3 bg-gray-100 rounded-lg">
+                          <div className="p-2 bg-red-100 rounded-full">
+                            <svg className="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                            </svg>
+                          </div>
+                          <div className="flex-1">
+                            <p className="font-medium text-sm text-gray-900">📍 Location</p>
+                            <p className="text-xs text-gray-600 mt-1">{msg.content}</p>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                    
+                    {/* Contact Message */}
+                    {msg.type === 'contacts' && (
+                      <div className="px-4 py-3">
+                        <div className="flex items-start gap-3 p-3 bg-gray-100 rounded-lg">
+                          <div className="p-2 bg-cyan-100 rounded-full">
+                            <svg className="w-6 h-6 text-cyan-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                            </svg>
+                          </div>
+                          <div className="flex-1">
+                            <p className="font-medium text-sm text-gray-900">👤 Contact</p>
+                            <p className="text-xs text-gray-600 mt-1">{msg.content}</p>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                    
+                    {/* Interactive Message (Buttons/List/CTA) */}
+                    {msg.type === 'interactive' && (
+                      <div className="px-4 py-3">
+                        <div className="flex items-start gap-2 p-3 bg-blue-50 rounded-lg border border-blue-200">
+                          <svg className="w-5 h-5 text-blue-600 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                          </svg>
+                          <div className="flex-1">
+                            <p className="text-sm text-blue-900 font-medium">Interactive Message</p>
+                            <p className="text-xs text-blue-700 mt-1">{msg.content}</p>
+                            <p className="text-xs text-blue-600 mt-1 italic">View in WhatsApp for full interaction</p>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                    
+                    {/* Reaction Message */}
+                    {msg.type === 'reaction' && (
+                      <div className="px-4 py-2">
+                        <p className="text-sm italic text-gray-600">{msg.content}</p>
+                      </div>
+                    )}
+                    
                     {/* Text Content / Caption */}
-                    {msg.content && msg.type !== 'document' && (
+                    {msg.content && !['document', 'location', 'contacts', 'interactive', 'reaction'].includes(msg.type) && (
                       <div className="px-4 py-2">
                         <p>{msg.content}</p>
                       </div>
@@ -1133,6 +1292,42 @@ const Messages = () => {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
               </svg>
               <span className="text-xs">Location</span>
+            </button>
+            <button
+              onClick={() => {
+                setMessageMode('contact');
+                setSelectedTemplate(null);
+                setTemplateVariables([]);
+                handleClearFile();
+              }}
+              className={`px-3 py-2 rounded-lg flex items-center justify-center gap-1 transition-colors ${
+                messageMode === 'contact'
+                  ? 'bg-cyan-600 text-white'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              }`}
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+              </svg>
+              <span className="text-xs">Contact</span>
+            </button>
+            <button
+              onClick={() => {
+                setMessageMode('sticker');
+                setSelectedTemplate(null);
+                setTemplateVariables([]);
+                handleClearFile();
+              }}
+              className={`px-3 py-2 rounded-lg flex items-center justify-center gap-1 transition-colors ${
+                messageMode === 'sticker'
+                  ? 'bg-yellow-600 text-white'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              }`}
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <span className="text-xs">Sticker</span>
             </button>
             <button
               onClick={() => setMessageMode('template')}
@@ -1835,6 +2030,245 @@ const Messages = () => {
               >
                 <Send className="w-4 h-4" />
                 Send Location
+              </button>
+            </div>
+          )}
+
+          {/* Contact Mode */}
+          {messageMode === 'contact' && (
+            <div className="space-y-3">
+              {/* Contact Name */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Full Name *
+                </label>
+                <input
+                  type="text"
+                  placeholder="e.g., John Doe"
+                  value={contactName}
+                  onChange={(e) => setContactName(e.target.value)}
+                  className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                />
+              </div>
+
+              {/* First and Last Name */}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    First Name (optional)
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="John"
+                    value={contactFirstName}
+                    onChange={(e) => setContactFirstName(e.target.value)}
+                    className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Last Name (optional)
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="Doe"
+                    value={contactLastName}
+                    onChange={(e) => setContactLastName(e.target.value)}
+                    className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                  />
+                </div>
+              </div>
+
+              {/* Phone */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Phone Number *
+                </label>
+                <input
+                  type="tel"
+                  placeholder="+60123456789"
+                  value={contactPhone}
+                  onChange={(e) => setContactPhone(e.target.value)}
+                  className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                />
+              </div>
+
+              {/* Email */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Email (optional)
+                </label>
+                <input
+                  type="email"
+                  placeholder="john@example.com"
+                  value={contactEmail}
+                  onChange={(e) => setContactEmail(e.target.value)}
+                  className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                />
+              </div>
+
+              {/* Company and Title */}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Company (optional)
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="Acme Inc"
+                    value={contactCompany}
+                    onChange={(e) => setContactCompany(e.target.value)}
+                    className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Job Title (optional)
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="CEO"
+                    value={contactTitle}
+                    onChange={(e) => setContactTitle(e.target.value)}
+                    className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                  />
+                </div>
+              </div>
+
+              {/* Preview */}
+              {contactName && contactPhone && (
+                <div className="p-4 bg-gray-50 rounded-lg border">
+                  <p className="text-xs text-gray-500 mb-2">Preview:</p>
+                  <div className="bg-white rounded-lg shadow p-4 max-w-sm">
+                    <div className="flex items-start gap-3">
+                      <div className="p-3 bg-cyan-100 rounded-full">
+                        <svg className="w-6 h-6 text-cyan-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                        </svg>
+                      </div>
+                      <div className="flex-1">
+                        <p className="font-medium text-gray-900">{contactName}</p>
+                        {contactCompany && (
+                          <p className="text-sm text-gray-600">{contactTitle ? `${contactTitle} at ${contactCompany}` : contactCompany}</p>
+                        )}
+                        <p className="text-sm text-gray-600 mt-2">{contactPhone}</p>
+                        {contactEmail && (
+                          <p className="text-sm text-gray-600">{contactEmail}</p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Send Button */}
+              <button
+                onClick={handleSendMessage}
+                disabled={!contactName || !contactPhone}
+                className="w-full px-6 py-2 bg-cyan-600 text-white rounded-lg hover:bg-cyan-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              >
+                <Send className="w-4 h-4" />
+                Send Contact
+              </button>
+            </div>
+          )}
+
+          {/* Sticker Mode */}
+          {messageMode === 'sticker' && (
+            <div className="space-y-3">
+              <div className="p-4 bg-yellow-50 rounded-lg border border-yellow-200">
+                <p className="text-sm text-yellow-800 mb-2">
+                  <strong>Note:</strong> Stickers must be in WebP format with transparent background.
+                </p>
+                <p className="text-xs text-yellow-700">
+                  Recommended size: 512x512 pixels, max 100KB
+                </p>
+              </div>
+
+              {/* Sticker URL Input */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Sticker URL *
+                </label>
+                <input
+                  type="url"
+                  placeholder="https://example.com/sticker.webp"
+                  value={stickerUrl}
+                  onChange={(e) => setStickerUrl(e.target.value)}
+                  className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  Enter a direct URL to a WebP sticker image
+                </p>
+              </div>
+
+              {/* Preview */}
+              {stickerUrl && stickerUrl.match(/^https?:\/\/.+/) && (
+                <div className="p-4 bg-gray-50 rounded-lg border">
+                  <p className="text-xs text-gray-500 mb-2">Preview:</p>
+                  <div className="bg-white rounded-lg shadow p-4 max-w-sm">
+                    <div className="flex items-center justify-center">
+                      <img 
+                        src={stickerUrl} 
+                        alt="Sticker preview" 
+                        className="w-32 h-32 object-contain"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).style.display = 'none';
+                        }}
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Example Stickers */}
+              <div className="p-4 bg-gray-50 rounded-lg border">
+                <p className="text-sm font-medium text-gray-700 mb-2">Example Stickers:</p>
+                <div className="grid grid-cols-3 gap-2">
+                  <button
+                    onClick={() => setStickerUrl('https://raw.githubusercontent.com/WhatsApp/stickers/main/Android/app/src/main/assets/1/01_Cuppy_smile.webp')}
+                    className="p-2 bg-white rounded-lg border hover:border-yellow-500 transition-colors"
+                  >
+                    <img 
+                      src="https://raw.githubusercontent.com/WhatsApp/stickers/main/Android/app/src/main/assets/1/01_Cuppy_smile.webp" 
+                      alt="Example 1" 
+                      className="w-full h-20 object-contain"
+                    />
+                  </button>
+                  <button
+                    onClick={() => setStickerUrl('https://raw.githubusercontent.com/WhatsApp/stickers/main/Android/app/src/main/assets/1/02_Cuppy_lol.webp')}
+                    className="p-2 bg-white rounded-lg border hover:border-yellow-500 transition-colors"
+                  >
+                    <img 
+                      src="https://raw.githubusercontent.com/WhatsApp/stickers/main/Android/app/src/main/assets/1/02_Cuppy_lol.webp" 
+                      alt="Example 2" 
+                      className="w-full h-20 object-contain"
+                    />
+                  </button>
+                  <button
+                    onClick={() => setStickerUrl('https://raw.githubusercontent.com/WhatsApp/stickers/main/Android/app/src/main/assets/1/03_Cuppy_rofl.webp')}
+                    className="p-2 bg-white rounded-lg border hover:border-yellow-500 transition-colors"
+                  >
+                    <img 
+                      src="https://raw.githubusercontent.com/WhatsApp/stickers/main/Android/app/src/main/assets/1/03_Cuppy_rofl.webp" 
+                      alt="Example 3" 
+                      className="w-full h-20 object-contain"
+                    />
+                  </button>
+                </div>
+                <p className="text-xs text-gray-500 mt-2">
+                  Click an example to use it
+                </p>
+              </div>
+
+              {/* Send Button */}
+              <button
+                onClick={handleSendMessage}
+                disabled={!stickerUrl || !stickerUrl.match(/^https?:\/\/.+/)}
+                className="w-full px-6 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              >
+                <Send className="w-4 h-4" />
+                Send Sticker
               </button>
             </div>
           )}

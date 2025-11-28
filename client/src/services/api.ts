@@ -157,7 +157,17 @@ export const messageService = {
   sendInteractiveCTA: (to: string, bodyText: string, buttonText: string, url: string) =>
     api.post('/messages/send-cta', { to, bodyText, buttonText, url }).then(res => res.data),
   sendLocation: (to: string, latitude: number, longitude: number, name?: string, address?: string) =>
-    api.post('/messages/send-location', { to, latitude, longitude, name, address }).then(res => res.data)
+    api.post('/messages/send-location', { to, latitude, longitude, name, address }).then(res => res.data),
+  sendContact: (to: string, contacts: Array<any>) =>
+    api.post('/messages/send-contact', { to, contacts }).then(res => res.data),
+  sendReaction: (to: string, messageId: string, emoji: string) =>
+    api.post('/messages/send-reaction', { to, messageId, emoji }).then(res => res.data),
+  sendReply: (to: string, message: string, contextMessageId: string) =>
+    api.post('/messages/send-reply', { to, message, contextMessageId }).then(res => res.data),
+  sendSticker: (to: string, mediaId?: string, stickerUrl?: string) =>
+    api.post('/messages/send-sticker', { to, mediaId, stickerUrl }).then(res => res.data),
+  markAsRead: (messageId: string) =>
+    api.post('/messages/mark-as-read', { messageId }).then(res => res.data)
 };
 
 export const templateService = {

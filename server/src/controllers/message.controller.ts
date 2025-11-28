@@ -429,3 +429,231 @@ export const sendLocationController = async (req: AuthRequest, res: Response) =>
     res.status(500).json({ error: error.message || 'Failed to send location' });
   }
 };
+
+export const sendContactController = async (req: AuthRequest, res: Response) => {
+  try {
+    const { to, contacts } = req.body;
+    
+    if (!to || !contacts || !Array.isArray(contacts)) {
+      return res.status(400).json({ error: 'Missing required fields (to, contacts)' });
+    }
+
+    // Normalize phone number
+    const normalizedPhone = to.replace(/^\+/, '');
+
+    const { sendContact } = require('../services/whatsapp.service');
+    const result = await sendContact(to, contacts);
+    
+    // Save message to database
+    const contactNames = contacts.map((c: any) => c.name.formatted_name).join(', ');
+    const savedMessage = await Message.create({
+      user_id: req.user!.id,
+      from_number: process.env.WHATSAPP_PHONE_NUMBER_ID || '',
+      to_number: normalizedPhone,
+      content: `Contact: ${contactNames}`,
+      type: 'contacts',
+      status: 'sent',
+      message_id: result.messages[0].id,
+    });
+
+    // Update conversation
+    const displayMessage = `[CONTACT] ${contactNames}`;
+    const [conversation, created] = await Conversation.findOrCreate({
+      where: { user_id: req.user!.id, phone_number: normalizedPhone },
+      defaults: {
+        last_message: displayMessage,
+        last_message_time: new Date(),
+      },
+    });
+
+    if (!created) {
+      await conversation.update({
+        last_message: displayMessage,
+        last_message_time: new Date(),
+      });
+    }
+    
+    res.json({ success: true, messageId: result.messages[0].id, message: savedMessage.toJSON() });
+  } catch (error: any) {
+    console.error('Send contact error:', error);
+    res.status(500).json({ error: error.message || 'Failed to send contact' });
+  }
+};
+
+export const sendReactionController = async (req: AuthRequest, res: Response) => {
+  try {
+    const { to, messageId, emoji } = req.body;
+    
+    if (!to || !messageId || emoji === undefined) {
+      return res.status(400).json({ error: 'Missing required fields (to, messageId, emoji)' });
+    }
+
+    // Normalize phone number
+    const normalizedPhone = to.replace(/^\+/, '');
+
+    const { sendReaction } = require('../services/whatsapp.service');
+    const result = await sendReaction(to, messageId, emoji);
+    
+    // Save reaction to database (optional - you might want to track reactions)
+    const reactionText = emoji ? `Reacted with ${emoji}` : 'Removed reaction';
+    const savedMessage = await Message.create({
+      user_id: req.user!.id,
+      from_number: process.env.WHATSAPP_PHONE_NUMBER_ID || '',
+      to_number: normalizedPhone,
+      content: reactionText,
+      type: 'reaction',
+      status: 'sent',
+      message_id: result.messages[0].id,
+    });
+
+    // Update conversation
+    const displayMessage = `[REACTION] ${reactionText}`;
+    const [conversation, created] = await Conversation.findOrCreate({
+      where: { user_id: req.user!.id, phone_number: normalizedPhone },
+      defaults: {
+        last_message: displayMessage,
+        last_message_time: new Date(),
+      },
+    });
+
+    if (!created) {
+      await conversation.update({
+        last_message: displayMessage,
+        last_message_time: new Date(),
+      });
+    }
+    
+    res.json({ success: true, messageId: result.messages[0].id, message: savedMessage.toJSON() });
+  } catch (error: any) {
+    console.error('Send reaction error:', error);
+    res.status(500).json({ error: error.message || 'Failed to send reaction' });
+  }
+};
+
+export const sendTextWithContextController = async (req: AuthRequest, res: Response) => {
+  try {
+    const { to, message, contextMessageId } = req.body;
+    
+    if (!to || !message || !contextMessageId) {
+      return res.status(400).json({ error: 'Missing required fields (to, message, contextMessageId)' });
+    }
+
+    // Normalize phone number
+    const normalizedPhone = to.replace(/^\+/, '');
+
+    const { sendTextWithContext } = require('../services/whatsapp.service');
+    const result = await sendTextWithContext(to, message, contextMessageId);
+    
+    // Save message to database
+    const savedMessage = await Message.create({
+      user_id: req.user!.id,
+      from_number: process.env.WHATSAPP_PHONE_NUMBER_ID || '',
+      to_number: normalizedPhone,
+      content: message,
+      type: 'text',
+      status: 'sent',
+      message_id: result.messages[0].id,
+    });
+
+    // Update conversation
+    const displayMessage = message.length > 50 ? message.substring(0, 50) + '...' : message;
+    const [conversation, created] = await Conversation.findOrCreate({
+      where: { user_id: req.user!.id, phone_number: normalizedPhone },
+      defaults: {
+        last_message: displayMessage,
+        last_message_time: new Date(),
+      },
+    });
+
+    if (!created) {
+      await conversation.update({
+        last_message: displayMessage,
+        last_message_time: new Date(),
+      });
+    }
+    
+    res.json({ success: true, messageId: result.messages[0].id, message: savedMessage.toJSON() });
+  } catch (error: any) {
+    console.error('Send text with context error:', error);
+    res.status(500).json({ error: error.message || 'Failed to send text with context' });
+  }
+};
+
+export const sendStickerController = async (req: AuthRequest, res: Response) => {
+  try {
+    const { to, mediaId, stickerUrl } = req.body;
+    
+    if (!to || (!mediaId && !stickerUrl)) {
+      return res.status(400).json({ error: 'Missing required fields (to, and either mediaId or stickerUrl)' });
+    }
+
+    // Normalize phone number
+    const normalizedPhone = to.replace(/^\+/, '');
+
+    const { sendSticker, sendStickerByUrl } = require('../services/whatsapp.service');
+    
+    // Send sticker by media ID or URL
+    const result = mediaId 
+      ? await sendSticker(to, mediaId)
+      : await sendStickerByUrl(to, stickerUrl);
+    
+    // Save message to database
+    const savedMessage = await Message.create({
+      user_id: req.user!.id,
+      from_number: process.env.WHATSAPP_PHONE_NUMBER_ID || '',
+      to_number: normalizedPhone,
+      content: '[Sticker]',
+      type: 'sticker',
+      status: 'sent',
+      message_id: result.messages[0].id,
+      media_id: mediaId,
+      media_url: stickerUrl,
+    });
+
+    // Update conversation
+    const displayMessage = '[STICKER]';
+    const [conversation, created] = await Conversation.findOrCreate({
+      where: { user_id: req.user!.id, phone_number: normalizedPhone },
+      defaults: {
+        last_message: displayMessage,
+        last_message_time: new Date(),
+      },
+    });
+
+    if (!created) {
+      await conversation.update({
+        last_message: displayMessage,
+        last_message_time: new Date(),
+      });
+    }
+    
+    res.json({ success: true, messageId: result.messages[0].id, message: savedMessage.toJSON() });
+  } catch (error: any) {
+    console.error('Send sticker error:', error);
+    res.status(500).json({ error: error.message || 'Failed to send sticker' });
+  }
+};
+
+export const markMessageAsReadController = async (req: AuthRequest, res: Response) => {
+  try {
+    const { messageId } = req.body;
+    
+    if (!messageId) {
+      return res.status(400).json({ error: 'Message ID is required' });
+    }
+
+    const { markMessageAsRead } = require('../services/whatsapp.service');
+    const result = await markMessageAsRead(messageId);
+    
+    // Update message status in database (optional)
+    await Message.update(
+      { status: 'read' },
+      { where: { message_id: messageId, user_id: req.user!.id } }
+    );
+    
+    res.json({ success: true, result });
+  } catch (error: any) {
+    console.error('Mark message as read error:', error);
+    res.status(500).json({ error: error.message || 'Failed to mark message as read' });
+  }
+};

@@ -582,3 +582,271 @@ export const sendLocation = async (
     throw error;
   }
 };
+
+export const sendContact = async (
+  to: string,
+  contacts: Array<{
+    name: {
+      formatted_name: string;
+      first_name?: string;
+      last_name?: string;
+    };
+    phones?: Array<{
+      phone: string;
+      type?: string;
+    }>;
+    emails?: Array<{
+      email: string;
+      type?: string;
+    }>;
+    org?: {
+      company?: string;
+      department?: string;
+      title?: string;
+    };
+  }>
+) => {
+  try {
+    // Validate contacts
+    if (!contacts || contacts.length === 0) {
+      throw new Error('At least one contact is required');
+    }
+
+    // Validate each contact has required fields
+    for (const contact of contacts) {
+      if (!contact.name || !contact.name.formatted_name) {
+        throw new Error('Contact must have a formatted_name');
+      }
+    }
+
+    const messageBody = {
+      messaging_product: 'whatsapp',
+      recipient_type: 'individual',
+      to,
+      type: 'contacts',
+      contacts: contacts
+    };
+
+    console.log('Sending contact:', JSON.stringify(messageBody, null, 2));
+
+    const response = await axios.post(
+      `${WHATSAPP_API_URL}/${API_VERSION}/${PHONE_NUMBER_ID}/messages`,
+      messageBody,
+      {
+        headers: {
+          'Authorization': `Bearer ${ACCESS_TOKEN}`,
+          'Content-Type': 'application/json'
+        }
+      }
+    );
+
+    return response.data;
+  } catch (error: any) {
+    console.error('Send contact error:', error);
+    throw error;
+  }
+};
+
+export const sendReaction = async (
+  to: string,
+  messageId: string,
+  emoji: string
+) => {
+  try {
+    // Validate emoji (WhatsApp supports standard Unicode emojis)
+    if (!emoji || emoji.trim().length === 0) {
+      throw new Error('Emoji is required');
+    }
+
+    // To remove a reaction, send an empty emoji
+    const messageBody = {
+      messaging_product: 'whatsapp',
+      recipient_type: 'individual',
+      to,
+      type: 'reaction',
+      reaction: {
+        message_id: messageId,
+        emoji: emoji
+      }
+    };
+
+    console.log('Sending reaction:', JSON.stringify(messageBody, null, 2));
+
+    const response = await axios.post(
+      `${WHATSAPP_API_URL}/${API_VERSION}/${PHONE_NUMBER_ID}/messages`,
+      messageBody,
+      {
+        headers: {
+          'Authorization': `Bearer ${ACCESS_TOKEN}`,
+          'Content-Type': 'application/json'
+        }
+      }
+    );
+
+    return response.data;
+  } catch (error: any) {
+    console.error('Send reaction error:', error);
+    throw error;
+  }
+};
+
+export const sendTextWithContext = async (
+  to: string,
+  message: string,
+  contextMessageId: string
+) => {
+  try {
+    // Validate inputs
+    if (!message || message.trim().length === 0) {
+      throw new Error('Message text is required');
+    }
+
+    if (!contextMessageId) {
+      throw new Error('Context message ID is required');
+    }
+
+    const messageBody = {
+      messaging_product: 'whatsapp',
+      recipient_type: 'individual',
+      to,
+      type: 'text',
+      context: {
+        message_id: contextMessageId
+      },
+      text: {
+        body: message
+      }
+    };
+
+    console.log('Sending text with context:', JSON.stringify(messageBody, null, 2));
+
+    const response = await axios.post(
+      `${WHATSAPP_API_URL}/${API_VERSION}/${PHONE_NUMBER_ID}/messages`,
+      messageBody,
+      {
+        headers: {
+          'Authorization': `Bearer ${ACCESS_TOKEN}`,
+          'Content-Type': 'application/json'
+        }
+      }
+    );
+
+    return response.data;
+  } catch (error: any) {
+    console.error('Send text with context error:', error);
+    throw error;
+  }
+};
+
+export const sendSticker = async (
+  to: string,
+  mediaId: string
+) => {
+  try {
+    // Validate media ID
+    if (!mediaId) {
+      throw new Error('Media ID is required');
+    }
+
+    const messageBody = {
+      messaging_product: 'whatsapp',
+      recipient_type: 'individual',
+      to,
+      type: 'sticker',
+      sticker: {
+        id: mediaId
+      }
+    };
+
+    console.log('Sending sticker:', JSON.stringify(messageBody, null, 2));
+
+    const response = await axios.post(
+      `${WHATSAPP_API_URL}/${API_VERSION}/${PHONE_NUMBER_ID}/messages`,
+      messageBody,
+      {
+        headers: {
+          'Authorization': `Bearer ${ACCESS_TOKEN}`,
+          'Content-Type': 'application/json'
+        }
+      }
+    );
+
+    return response.data;
+  } catch (error: any) {
+    console.error('Send sticker error:', error);
+    throw error;
+  }
+};
+
+export const sendStickerByUrl = async (
+  to: string,
+  stickerUrl: string
+) => {
+  try {
+    // Validate URL
+    if (!stickerUrl || (!stickerUrl.startsWith('http://') && !stickerUrl.startsWith('https://'))) {
+      throw new Error('Valid sticker URL is required');
+    }
+
+    const messageBody = {
+      messaging_product: 'whatsapp',
+      recipient_type: 'individual',
+      to,
+      type: 'sticker',
+      sticker: {
+        link: stickerUrl
+      }
+    };
+
+    console.log('Sending sticker by URL:', JSON.stringify(messageBody, null, 2));
+
+    const response = await axios.post(
+      `${WHATSAPP_API_URL}/${API_VERSION}/${PHONE_NUMBER_ID}/messages`,
+      messageBody,
+      {
+        headers: {
+          'Authorization': `Bearer ${ACCESS_TOKEN}`,
+          'Content-Type': 'application/json'
+        }
+      }
+    );
+
+    return response.data;
+  } catch (error: any) {
+    console.error('Send sticker by URL error:', error);
+    throw error;
+  }
+};
+
+export const markMessageAsRead = async (messageId: string) => {
+  try {
+    // Validate message ID
+    if (!messageId) {
+      throw new Error('Message ID is required');
+    }
+
+    const messageBody = {
+      messaging_product: 'whatsapp',
+      status: 'read',
+      message_id: messageId
+    };
+
+    console.log('Marking message as read:', JSON.stringify(messageBody, null, 2));
+
+    const response = await axios.post(
+      `${WHATSAPP_API_URL}/${API_VERSION}/${PHONE_NUMBER_ID}/messages`,
+      messageBody,
+      {
+        headers: {
+          'Authorization': `Bearer ${ACCESS_TOKEN}`,
+          'Content-Type': 'application/json'
+        }
+      }
+    );
+
+    return response.data;
+  } catch (error: any) {
+    console.error('Mark message as read error:', error);
+    throw error;
+  }
+};
