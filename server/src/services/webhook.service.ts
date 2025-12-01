@@ -15,6 +15,33 @@ export const processWebhookMessage = async (message: WhatsAppMessage, metadata: 
     let content = '';
     let mediaId = null;
     let caption = null;
+    let contextMessageId = null;
+    let contextMessageContent = null;
+    
+    // Check if this is a reply (has context)
+    let contextMessageType = null;
+    let contextMessageMediaUrl = null;
+    
+    if (message.context && message.context.message_id) {
+      contextMessageId = message.context.message_id;
+      console.log('📎 Reply to message:', contextMessageId);
+      
+      // Try to find the original message to get its content and media
+      const originalMessage = await Message.findOne({
+        where: { message_id: contextMessageId }
+      });
+      
+      if (originalMessage) {
+        contextMessageContent = originalMessage.content;
+        contextMessageType = originalMessage.type;
+        contextMessageMediaUrl = originalMessage.media_url;
+        console.log('📎 Original message:', {
+          type: contextMessageType,
+          content: contextMessageContent?.substring(0, 30),
+          hasMedia: !!contextMessageMediaUrl
+        });
+      }
+    }
     
     if (message.type === 'text' && message.text) {
       content = message.text.body;
@@ -46,6 +73,18 @@ export const processWebhookMessage = async (message: WhatsAppMessage, metadata: 
       mediaId = message.document.id;
       caption = message.document.caption || '';
       content = message.document.filename || caption || '[Document]';
+    } else if (message.type === 'location' && message.location) {
+      // Handle location message
+      const lat = message.location.latitude;
+      const lng = message.location.longitude;
+      const name = message.location.name || '';
+      const address = message.location.address || '';
+      
+      content = `📍 Location: ${lat}, ${lng}`;
+      if (name) content += `\nName: ${name}`;
+      if (address) content += `\nAddress: ${address}`;
+      
+      console.log('Location message:', { lat, lng, name, address });
     } else {
       content = `[${message.type}]`;
     }
@@ -86,6 +125,10 @@ export const processWebhookMessage = async (message: WhatsAppMessage, metadata: 
           message_id: message.id, // Keep original WhatsApp message ID
           media_id: mediaId,
           caption: caption,
+          context_message_id: contextMessageId,
+          context_message_content: contextMessageContent,
+          context_message_type: contextMessageType,
+          context_message_media_url: contextMessageMediaUrl,
         });
         
         console.log('✅ Message saved for user:', user.email);
@@ -149,5 +192,35 @@ export const processWebhookMessage = async (message: WhatsAppMessage, metadata: 
 
   } catch (error) {
     console.error('Process webhook message error:', error);
+  }
+};
+
+export const processMessageStatus = async (status: any, metadata: any) => {
+  try {
+    console.log('📊 Received status update:', {
+      id: status.id,
+      status: status.status,
+      timestamp: status.timestamp,
+      recipient_id: status.recipient_id
+    });
+
+    // Update message status in database
+    const messageId = status.id;
+    const newStatus = status.status; // 'sent', 'delivered', 'read', 'failed'
+
+    // Find the message by WhatsApp message ID
+    const message = await Message.findOne({
+      where: { message_id: messageId }
+    });
+
+    if (message) {
+      await message.update({ status: newStatus });
+      console.log(`✅ Message status updated to "${newStatus}" for message:`, messageId);
+    } else {
+      console.log('⚠️  Message not found for status update:', messageId);
+    }
+
+  } catch (error) {
+    console.error('Process message status error:', error);
   }
 };

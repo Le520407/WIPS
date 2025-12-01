@@ -14,6 +14,10 @@ class Message extends Model {
   public media_url?: string;
   public media_id?: string;
   public caption?: string;
+  public context_message_id?: string;
+  public context_message_content?: string;
+  public context_message_type?: string;
+  public context_message_media_url?: string;
   public readonly created_at!: Date;
   public readonly updated_at!: Date;
 }
@@ -68,6 +72,22 @@ Message.init(
       type: DataTypes.TEXT,
       allowNull: true,
     },
+    context_message_id: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
+    context_message_content: {
+      type: DataTypes.TEXT,
+      allowNull: true,
+    },
+    context_message_type: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
+    context_message_media_url: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
   },
   {
     sequelize,
@@ -98,6 +118,10 @@ Message.prototype.toJSON = function () {
     mediaUrl: values.media_url,
     mediaId: values.media_id,
     caption: values.caption,
+    contextMessageId: values.context_message_id,
+    contextMessageContent: values.context_message_content,
+    contextMessageType: values.context_message_type,
+    contextMessageMediaUrl: values.context_message_media_url,
     createdAt: values.createdAt,
     updatedAt: values.updatedAt,
   };

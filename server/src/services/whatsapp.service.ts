@@ -5,7 +5,7 @@ const API_VERSION = process.env.WHATSAPP_API_VERSION || 'v18.0';
 const PHONE_NUMBER_ID = process.env.WHATSAPP_PHONE_NUMBER_ID;
 const ACCESS_TOKEN = process.env.WHATSAPP_ACCESS_TOKEN;
 
-export const sendWhatsAppMessage = async (to: string, message: string, type: string = 'text', mediaUrl?: string, caption?: string) => {
+export const sendWhatsAppMessage = async (to: string, message: string, type: string = 'text', mediaUrl?: string, caption?: string, contextMessageId?: string) => {
   try {
     let messageBody: any = {
       messaging_product: 'whatsapp',
@@ -13,6 +13,13 @@ export const sendWhatsAppMessage = async (to: string, message: string, type: str
       to,
       type
     };
+    
+    // Add context if replying to a message
+    if (contextMessageId) {
+      messageBody.context = {
+        message_id: contextMessageId
+      };
+    }
 
     // Build message based on type
     switch (type) {
@@ -241,7 +248,7 @@ export const uploadMediaToWhatsApp = async (fileBuffer: Buffer, mimeType: string
   }
 };
 
-export const sendMediaMessage = async (to: string, mediaId: string, type: string, caption?: string, filename?: string) => {
+export const sendMediaMessage = async (to: string, mediaId: string, type: string, caption?: string, filename?: string, contextMessageId?: string) => {
   try {
     let messageBody: any = {
       messaging_product: 'whatsapp',
@@ -249,6 +256,13 @@ export const sendMediaMessage = async (to: string, mediaId: string, type: string
       to,
       type
     };
+    
+    // Add context if replying to a message
+    if (contextMessageId) {
+      messageBody.context = {
+        message_id: contextMessageId
+      };
+    }
 
     // Build message based on media type
     switch (type) {
@@ -740,7 +754,8 @@ export const sendTextWithContext = async (
 
 export const sendSticker = async (
   to: string,
-  mediaId: string
+  mediaId: string,
+  contextMessageId?: string
 ) => {
   try {
     // Validate media ID
@@ -748,7 +763,7 @@ export const sendSticker = async (
       throw new Error('Media ID is required');
     }
 
-    const messageBody = {
+    const messageBody: any = {
       messaging_product: 'whatsapp',
       recipient_type: 'individual',
       to,
@@ -757,6 +772,13 @@ export const sendSticker = async (
         id: mediaId
       }
     };
+
+    // Add context if replying to a message
+    if (contextMessageId) {
+      messageBody.context = {
+        message_id: contextMessageId
+      };
+    }
 
     console.log('Sending sticker:', JSON.stringify(messageBody, null, 2));
 
@@ -780,7 +802,8 @@ export const sendSticker = async (
 
 export const sendStickerByUrl = async (
   to: string,
-  stickerUrl: string
+  stickerUrl: string,
+  contextMessageId?: string
 ) => {
   try {
     // Validate URL
@@ -788,7 +811,7 @@ export const sendStickerByUrl = async (
       throw new Error('Valid sticker URL is required');
     }
 
-    const messageBody = {
+    const messageBody: any = {
       messaging_product: 'whatsapp',
       recipient_type: 'individual',
       to,
@@ -797,6 +820,13 @@ export const sendStickerByUrl = async (
         link: stickerUrl
       }
     };
+
+    // Add context if replying to a message
+    if (contextMessageId) {
+      messageBody.context = {
+        message_id: contextMessageId
+      };
+    }
 
     console.log('Sending sticker by URL:', JSON.stringify(messageBody, null, 2));
 
@@ -825,10 +855,22 @@ export const markMessageAsRead = async (messageId: string) => {
       throw new Error('Message ID is required');
     }
 
+    // Clean message ID - remove any UUID suffix that might have been appended
+    // WhatsApp message IDs should only be the wamid.xxx part
+    let cleanMessageId = messageId;
+    if (messageId.includes('_')) {
+      // Split by underscore and take only the first part (the wamid)
+      cleanMessageId = messageId.split('_')[0];
+      console.log('🧹 Cleaned message ID:', {
+        original: messageId,
+        cleaned: cleanMessageId
+      });
+    }
+
     const messageBody = {
       messaging_product: 'whatsapp',
       status: 'read',
-      message_id: messageId
+      message_id: cleanMessageId
     };
 
     console.log('Marking message as read:', JSON.stringify(messageBody, null, 2));
@@ -847,6 +889,165 @@ export const markMessageAsRead = async (messageId: string) => {
     return response.data;
   } catch (error: any) {
     console.error('Mark message as read error:', error);
+    throw error;
+  }
+};
+
+// Typing Indicators
+// Typing indicators work by marking a message as read AND including typing_indicator object
+// This requires a message_id from a received message (from webhook)
+export const sendTypingIndicator = async (to: string, messageId: string) => {
+  try {
+    if (!to || !messageId) {
+      throw new Error('Recipient number and message ID are required');
+    }
+
+    // According to WhatsApp Cloud API docs:
+    // To show typing indicator, mark message as read with typing_indicator object
+    const messageBody = {
+      messaging_product: 'whatsapp',
+      status: 'read',
+      message_id: messageId,
+      typing_indicator: {
+        type: 'text'
+      }
+    };
+
+    console.log('Sending typing indicator:', JSON.stringify(messageBody, null, 2));
+
+    const response = await axios.post(
+      `${WHATSAPP_API_URL}/${API_VERSION}/${PHONE_NUMBER_ID}/messages`,
+      messageBody,
+      {
+        headers: {
+          'Authorization': `Bearer ${ACCESS_TOKEN}`,
+          'Content-Type': 'application/json'
+        }
+      }
+    );
+
+    return response.data;
+  } catch (error: any) {
+    console.error('Send typing indicator error:');
+    if (error.response) {
+      console.error('Status:', error.response.status);
+      console.error('Data:', JSON.stringify(error.response.data, null, 2));
+    }
+    throw error;
+  }
+};
+
+// Request Location
+export const requestLocation = async (to: string, bodyText: string) => {
+  try {
+    if (!to || !bodyText) {
+      throw new Error('Recipient number and body text are required');
+    }
+
+    const messageBody = {
+      messaging_product: 'whatsapp',
+      recipient_type: 'individual',
+      to,
+      type: 'interactive',
+      interactive: {
+        type: 'location_request_message',
+        body: {
+          text: bodyText
+        },
+        action: {
+          name: 'send_location'
+        }
+      }
+    };
+
+    console.log('Requesting location from:', to);
+
+    const response = await axios.post(
+      `${WHATSAPP_API_URL}/${API_VERSION}/${PHONE_NUMBER_ID}/messages`,
+      messageBody,
+      {
+        headers: {
+          'Authorization': `Bearer ${ACCESS_TOKEN}`,
+          'Content-Type': 'application/json'
+        }
+      }
+    );
+
+    return response.data;
+  } catch (error: any) {
+    console.error('Request location error:', error.response?.data || error);
+    throw error;
+  }
+};
+
+// Send Address (as Contact with Address)
+export const sendAddress = async (
+  to: string,
+  name: string,
+  address: {
+    street?: string;
+    city?: string;
+    state?: string;
+    zip?: string;
+    country?: string;
+    country_code?: string;
+    type?: string; // HOME, WORK
+  }
+) => {
+  try {
+    // Validate inputs
+    if (!to || !name) {
+      throw new Error('Recipient number and name are required');
+    }
+
+    if (!address || Object.keys(address).length === 0) {
+      throw new Error('Address information is required');
+    }
+
+    // Build contact with address
+    const contact: any = {
+      name: {
+        formatted_name: name,
+        first_name: name.split(' ')[0],
+        last_name: name.split(' ').slice(1).join(' ') || undefined
+      },
+      addresses: [
+        {
+          street: address.street,
+          city: address.city,
+          state: address.state,
+          zip: address.zip,
+          country: address.country,
+          country_code: address.country_code,
+          type: address.type || 'HOME'
+        }
+      ]
+    };
+
+    const messageBody = {
+      messaging_product: 'whatsapp',
+      recipient_type: 'individual',
+      to,
+      type: 'contacts',
+      contacts: [contact]
+    };
+
+    console.log('Sending address:', JSON.stringify(messageBody, null, 2));
+
+    const response = await axios.post(
+      `${WHATSAPP_API_URL}/${API_VERSION}/${PHONE_NUMBER_ID}/messages`,
+      messageBody,
+      {
+        headers: {
+          'Authorization': `Bearer ${ACCESS_TOKEN}`,
+          'Content-Type': 'application/json'
+        }
+      }
+    );
+
+    return response.data;
+  } catch (error: any) {
+    console.error('Send address error:', error);
     throw error;
   }
 };

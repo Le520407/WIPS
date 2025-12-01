@@ -37,9 +37,18 @@ export const handleWebhook = async (req: Request, res: Response) => {
 
     for (const entry of body.entry) {
       for (const change of entry.changes) {
+        // Handle incoming messages
         if (change.value.messages) {
           for (const message of change.value.messages) {
             await processWebhookMessage(message, change.value.metadata);
+          }
+        }
+        
+        // Handle message status updates (delivered, read, etc.)
+        if (change.value.statuses) {
+          const { processMessageStatus } = require('../services/webhook.service');
+          for (const status of change.value.statuses) {
+            await processMessageStatus(status, change.value.metadata);
           }
         }
       }

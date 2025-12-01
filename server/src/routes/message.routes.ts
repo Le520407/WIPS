@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import multer from 'multer';
-import { getMessages, sendMessage, getConversations, markConversationAsRead, uploadMedia, sendMediaMessageController, getMediaUrl, sendInteractiveButtonsController, sendInteractiveListController, sendInteractiveCTAController, sendLocationController, sendContactController, sendReactionController, sendTextWithContextController, sendStickerController, markMessageAsReadController } from '../controllers/message.controller';
+import { getMessages, sendMessage, getConversations, markConversationAsRead, uploadMedia, sendMediaMessageController, getMediaUrl, sendInteractiveButtonsController, sendInteractiveListController, sendInteractiveCTAController, sendLocationController, sendContactController, sendReactionController, sendTextWithContextController, sendStickerController, markMessageAsReadController, sendTypingIndicatorController, requestLocationController, sendAddressController } from '../controllers/message.controller';
 import { authMiddleware } from '../middleware/auth.middleware';
 
 const router = Router();
@@ -28,6 +28,9 @@ router.post('/send-reaction', sendReactionController);
 router.post('/send-reply', sendTextWithContextController);
 router.post('/send-sticker', sendStickerController);
 router.post('/mark-as-read', markMessageAsReadController);
+router.post('/send-typing', sendTypingIndicatorController);
+router.post('/request-location', requestLocationController);
+router.post('/send-address', sendAddressController);
 router.get('/media/:mediaId', getMediaUrl);
 
 export default router;

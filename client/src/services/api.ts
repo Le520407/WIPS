@@ -143,8 +143,8 @@ export const messageService = {
       headers: { 'Content-Type': 'multipart/form-data' }
     }).then(res => res.data);
   },
-  sendMediaMessage: (to: string, mediaId: string, type: string, caption?: string, filename?: string) =>
-    api.post('/messages/send-media', { to, mediaId, type, caption, filename }).then(res => res.data),
+  sendMediaMessage: (to: string, mediaId: string, type: string, caption?: string, filename?: string, contextMessageId?: string) =>
+    api.post('/messages/send-media', { to, mediaId, type, caption, filename, contextMessageId }).then(res => res.data),
   getMediaUrl: (mediaId: string) =>
     api.get(`/messages/media/${mediaId}`).then(res => res.data),
   sendInteractiveButtons: (to: string, bodyText: string, buttons: Array<{id: string, title: string}>) =>
@@ -164,10 +164,16 @@ export const messageService = {
     api.post('/messages/send-reaction', { to, messageId, emoji }).then(res => res.data),
   sendReply: (to: string, message: string, contextMessageId: string) =>
     api.post('/messages/send-reply', { to, message, contextMessageId }).then(res => res.data),
-  sendSticker: (to: string, mediaId?: string, stickerUrl?: string) =>
-    api.post('/messages/send-sticker', { to, mediaId, stickerUrl }).then(res => res.data),
+  sendSticker: (to: string, mediaId?: string, stickerUrl?: string, contextMessageId?: string) =>
+    api.post('/messages/send-sticker', { to, mediaId, stickerUrl, contextMessageId }).then(res => res.data),
   markAsRead: (messageId: string) =>
-    api.post('/messages/mark-as-read', { messageId }).then(res => res.data)
+    api.post('/messages/mark-as-read', { messageId }).then(res => res.data),
+  sendTypingIndicator: (to: string, messageId: string) =>
+    api.post('/messages/send-typing', { to, messageId }).then(res => res.data),
+  requestLocation: (to: string, bodyText: string) =>
+    api.post('/messages/request-location', { to, bodyText }).then(res => res.data),
+  sendAddress: (to: string, name: string, address: any) =>
+    api.post('/messages/send-address', { to, name, address }).then(res => res.data)
 };
 
 export const templateService = {

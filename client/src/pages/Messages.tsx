@@ -10,7 +10,7 @@ const Messages = () => {
   const [selectedConversation, setSelectedConversation] = useState<string | null>(null);
   
   // Template sending
-  const [messageMode, setMessageMode] = useState<'text' | 'template' | 'media' | 'buttons' | 'list' | 'cta' | 'location' | 'contact' | 'sticker'>('text');
+  const [messageMode, setMessageMode] = useState<'text' | 'template' | 'media' | 'buttons' | 'list' | 'cta' | 'location' | 'contact' | 'sticker' | 'location_request' | 'address'>('text');
   const [templates, setTemplates] = useState<any[]>([]);
   const [selectedTemplate, setSelectedTemplate] = useState<any>(null);
   const [templateVariables, setTemplateVariables] = useState<string[]>([]);
@@ -58,6 +58,18 @@ const Messages = () => {
   // Sticker
   const [stickerUrl, setStickerUrl] = useState('');
   
+  // Location Request
+  const [locationRequestText, setLocationRequestText] = useState('');
+  
+  // Address
+  const [addressName, setAddressName] = useState('');
+  const [addressStreet, setAddressStreet] = useState('');
+  const [addressCity, setAddressCity] = useState('');
+  const [addressState, setAddressState] = useState('');
+  const [addressZip, setAddressZip] = useState('');
+  const [addressCountry, setAddressCountry] = useState('');
+  const [addressType, setAddressType] = useState('HOME');
+  
   // Media sending
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [filePreview, setFilePreview] = useState<string | null>(null);
@@ -76,11 +88,22 @@ const Messages = () => {
   const [showAddReply, setShowAddReply] = useState(false);
   const [newQuickReply, setNewQuickReply] = useState('');
   
+  // Reply/Quote functionality
+  const [replyingTo, setReplyingTo] = useState<any>(null);
+  
+  // Emoji picker
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  
   // Refs for auto-scrolling
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const prevMessageCountRef = useRef<number>(0);
   const lastMessageIdRef = useRef<string | null>(null);
+  
+  // Typing indicator
+  const typingTimeoutRef = useRef<number | null>(null);
+  const isTypingRef = useRef<boolean>(false);
+  const lastIncomingMessageIdRef = useRef<string | null>(null);
 
   useEffect(() => {
     loadConversations();
@@ -395,7 +418,51 @@ const Messages = () => {
     setListSections(newSections);
   };
 
+  // Handle typing indicator
+  const handleTyping = () => {
+    if (!recipient) return;
+    
+    const isDemoMode = localStorage.getItem('demo_mode') === 'true';
+    if (isDemoMode) return; // Skip in demo mode
+    
+    // Need a message_id from an incoming message to show typing indicator
+    if (!lastIncomingMessageIdRef.current) {
+      console.log('⚠️ No incoming message ID available for typing indicator');
+      return;
+    }
+    
+    // Send typing indicator if not already typing
+    if (!isTypingRef.current) {
+      messageService.sendTypingIndicator(recipient, lastIncomingMessageIdRef.current)
+        .then(() => {
+          console.log('✅ Typing indicator sent');
+          isTypingRef.current = true;
+        })
+        .catch(err => {
+          console.error('Failed to send typing indicator:', err);
+          // If it fails, clear the message ID (might be expired)
+          lastIncomingMessageIdRef.current = null;
+        });
+    }
+    
+    // Clear existing timeout
+    if (typingTimeoutRef.current) {
+      clearTimeout(typingTimeoutRef.current);
+    }
+    
+    // Reset typing flag after 3 seconds of inactivity
+    // (The indicator will auto-clear after 25 seconds on WhatsApp side)
+    typingTimeoutRef.current = setTimeout(() => {
+      isTypingRef.current = false;
+    }, 3000);
+  };
+
   const handleSendMessage = async () => {
+    // Reset typing flag when sending (indicator will auto-clear on WhatsApp side)
+    if (isTypingRef.current) {
+      isTypingRef.current = false;
+    }
+    
     if (!recipient) {
       alert('Please enter recipient number');
       return;
@@ -493,6 +560,18 @@ const Messages = () => {
       return;
     }
 
+    if (messageMode === 'location_request' && !locationRequestText.trim()) {
+      alert('Please enter request message text');
+      return;
+    }
+
+    if (messageMode === 'address') {
+      if (!addressName.trim() || !addressStreet.trim() || !addressCity.trim() || !addressCountry.trim()) {
+        alert('Please fill in all required address fields (Name, Street, City, Country)');
+        return;
+      }
+    }
+
     try{
       const isDemoMode = localStorage.getItem('demo_mode') === 'true';
       
@@ -558,22 +637,33 @@ const Messages = () => {
         }, 2000);
       } else {
         if (messageMode === 'text') {
-          await messageService.sendMessage(recipient, newMessage);
+          // Check if replying to a message
+          if (replyingTo && replyingTo.messageId && replyingTo.messageId.startsWith('wamid.')) {
+            // Send as contextual reply using WhatsApp message ID
+            console.log('Sending reply to message:', replyingTo.messageId);
+            await messageService.sendReply(recipient, newMessage, replyingTo.messageId);
+          } else {
+            // Send as normal text message
+            await messageService.sendMessage(recipient, newMessage);
+          }
           setNewMessage('');
+          setReplyingTo(null); // Clear reply state
         } else if (messageMode === 'media' && selectedFile) {
           setUploading(true);
           try {
             // Upload file first
             const uploadResult = await messageService.uploadMedia(selectedFile);
-            // Send media message with media ID, type, caption, and filename
+            // Send media message with media ID, type, caption, filename, and optional context
             await messageService.sendMediaMessage(
               recipient, 
               uploadResult.mediaId, 
               mediaType, 
               mediaCaption,
-              selectedFile.name  // Pass the actual filename
+              selectedFile.name,  // Pass the actual filename
+              replyingTo?.messageId  // Pass context if replying
             );
             handleClearFile();
+            setReplyingTo(null); // Clear reply state
           } finally {
             setUploading(false);
           }
@@ -635,8 +725,29 @@ const Messages = () => {
           setContactCompany('');
           setContactTitle('');
         } else if (messageMode === 'sticker') {
-          await messageService.sendSticker(recipient, undefined, stickerUrl);
+          await messageService.sendSticker(recipient, undefined, stickerUrl, replyingTo?.messageId);
           setStickerUrl('');
+          setReplyingTo(null); // Clear reply state
+        } else if (messageMode === 'location_request') {
+          await messageService.requestLocation(recipient, locationRequestText);
+          setLocationRequestText('');
+        } else if (messageMode === 'address') {
+          const address = {
+            street: addressStreet,
+            city: addressCity,
+            state: addressState || undefined,
+            zip: addressZip || undefined,
+            country: addressCountry,
+            type: addressType
+          };
+          await messageService.sendAddress(recipient, addressName, address);
+          setAddressName('');
+          setAddressStreet('');
+          setAddressCity('');
+          setAddressState('');
+          setAddressZip('');
+          setAddressCountry('');
+          setAddressType('HOME');
         } else {
           // Send template message
           alert('Template sending via real API not implemented yet');
@@ -699,22 +810,24 @@ const Messages = () => {
     try {
       const data = await messageService.getMessages(conv.id);
       
-      // Check if messages have actually changed using ref (to avoid stale closure)
-      const lastNewMsg = data.messages[data.messages.length - 1];
+      // Always update messages to ensure new messages are displayed
+      // Find the last message we sent (not received)
+      const sentMessages = data.messages.filter((msg: any) => msg.fromNumber === '803320889535856');
+      const lastSentMsg = sentMessages[sentMessages.length - 1];
       
-      if (lastNewMsg && lastNewMsg.id === lastMessageIdRef.current) {
-        // Messages haven't changed, skip update to avoid re-rendering
-        return;
-      }
-      
-      // Update the ref with the new last message ID
-      if (lastNewMsg) {
-        lastMessageIdRef.current = lastNewMsg.id;
-      }
+      console.log('Refreshing messages:', {
+        totalMessages: data.messages.length,
+        sentMessages: sentMessages.length,
+        lastSentMsg: lastSentMsg ? {
+          content: lastSentMsg.content?.substring(0, 30),
+          status: lastSentMsg.status,
+          to: lastSentMsg.toNumber
+        } : 'No sent messages'
+      });
       
       // Transform API messages to match frontend format
       const transformedMessages = await Promise.all(data.messages.map(async (msg: any) => {
-        const isFromUs = msg.fromNumber === '803320889535856' || msg.toNumber === conv.phoneNumber;
+        const isFromUs = msg.fromNumber === '803320889535856';
         
         let mediaUrl = msg.mediaUrl;
         
@@ -744,6 +857,7 @@ const Messages = () => {
         
         return {
           id: msg.id,
+          messageId: msg.messageId, // WhatsApp message ID (wamid.xxx)
           content: msg.content,
           from: isFromUs ? 'me' : conv.phoneNumber,
           to: isFromUs ? conv.phoneNumber : 'me',
@@ -752,12 +866,30 @@ const Messages = () => {
           type: msg.type,
           mediaUrl: mediaUrl,
           mediaId: msg.mediaId,
-          caption: msg.caption
+          caption: msg.caption,
+          contextMessageId: msg.contextMessageId,
+          contextMessageContent: msg.contextMessageContent,
+          contextMessageType: msg.contextMessageType,
+          contextMessageMediaUrl: msg.contextMessageMediaUrl
         };
       }));
       
-      // Only update if messages have actually changed
+      console.log('Setting messages:', {
+        count: transformedMessages.length,
+        lastMsg: transformedMessages[transformedMessages.length - 1]?.content?.substring(0, 30)
+      });
+      
+      // Update messages
       setMessages(transformedMessages);
+      
+      // Update last incoming message ID for typing indicator
+      const incomingMessages = transformedMessages.filter((msg: any) => msg.from !== 'me');
+      if (incomingMessages.length > 0) {
+        const lastIncoming = incomingMessages[incomingMessages.length - 1];
+        if (lastIncoming.messageId) {
+          lastIncomingMessageIdRef.current = lastIncoming.messageId;
+        }
+      }
     } catch (err) {
       console.error('Failed to refresh messages:', err);
     }
@@ -884,9 +1016,17 @@ const Messages = () => {
       messageService.getMessages(conv.id)
         .then(async (data: any) => {
           // Transform API messages to match frontend format
+          console.log('📊 Received messages from API:', data.messages.length);
           const transformedMessages = await Promise.all(data.messages.map(async (msg: any) => {
             // If fromNumber is our WhatsApp number, it's from us
-            const isFromUs = msg.fromNumber === '803320889535856' || msg.toNumber === conv.phoneNumber;
+            const isFromUs = msg.fromNumber === '803320889535856';
+            console.log('Message:', {
+              id: msg.id.substring(0, 8),
+              from: msg.fromNumber,
+              to: msg.toNumber,
+              isFromUs,
+              content: msg.content.substring(0, 20)
+            });
             
             let mediaUrl = msg.mediaUrl;
             
@@ -920,6 +1060,7 @@ const Messages = () => {
             
             return {
               id: msg.id,
+              messageId: msg.messageId, // WhatsApp message ID (wamid.xxx)
               content: msg.content,
               from: isFromUs ? 'me' : conv.phoneNumber,
               to: isFromUs ? conv.phoneNumber : 'me',
@@ -928,7 +1069,11 @@ const Messages = () => {
               type: msg.type,
               mediaUrl: mediaUrl,
               mediaId: msg.mediaId,
-              caption: msg.caption
+              caption: msg.caption,
+              contextMessageId: msg.contextMessageId,
+              contextMessageContent: msg.contextMessageContent,
+              contextMessageType: msg.contextMessageType,
+              contextMessageMediaUrl: msg.contextMessageMediaUrl
             };
           }));
           setMessages(transformedMessages);
@@ -936,22 +1081,68 @@ const Messages = () => {
           if (transformedMessages.length > 0) {
             lastMessageIdRef.current = transformedMessages[transformedMessages.length - 1].id;
           }
+          
+          // Update last incoming message ID for typing indicator
+          // Find the most recent message from the user (not from us)
+          const incomingMessages = transformedMessages.filter((msg: any) => msg.from !== 'me');
+          if (incomingMessages.length > 0) {
+            const lastIncoming = incomingMessages[incomingMessages.length - 1];
+            // Use the WhatsApp message ID (messageId field, starts with 'wamid.')
+            if (lastIncoming.messageId) {
+              lastIncomingMessageIdRef.current = lastIncoming.messageId;
+              console.log('📨 Last incoming message ID for typing indicator:', lastIncoming.messageId);
+            }
+          }
           // Scroll to bottom when opening a conversation
           setTimeout(() => scrollToBottom(), 100);
           
-          // Auto-mark received messages as read
+          // Auto-mark received messages as read (Smart version - only latest message)
+          console.log('🔍 Checking for messages to mark as read...');
+          console.log('Total messages:', transformedMessages.length);
+          
           const receivedMessages = transformedMessages.filter((msg: any) => 
             msg.from !== 'me' && msg.status !== 'read'
           );
           
-          // Mark each received message as read in WhatsApp
-          receivedMessages.forEach((msg: any) => {
-            // Only mark if we have a valid WhatsApp message ID (starts with 'wamid.')
-            if (msg.id && typeof msg.id === 'string' && msg.id.startsWith('wamid.')) {
-              messageService.markAsRead(msg.id)
-                .catch((err: any) => console.error('Failed to mark message as read:', err));
+          console.log('Unread received messages:', receivedMessages.length);
+          
+          // Mark only the most recent message as read to avoid API errors
+          if (receivedMessages.length > 0) {
+            const latestMessage = receivedMessages[receivedMessages.length - 1];
+            console.log('Latest unread message:', {
+              id: latestMessage.id,
+              messageId: latestMessage.messageId,
+              content: latestMessage.content?.substring(0, 30),
+              status: latestMessage.status,
+              from: latestMessage.from
+            });
+            
+            // Only mark if it has a valid WhatsApp message ID
+            if (latestMessage.messageId && latestMessage.messageId.startsWith('wamid.')) {
+              console.log('📨 Attempting to mark as read:', latestMessage.messageId);
+              
+              messageService.markAsRead(latestMessage.messageId)
+                .then(() => {
+                  console.log('✅ Successfully marked message as read!');
+                  // Update local message status
+                  setMessages(prev => prev.map(m => 
+                    m.messageId === latestMessage.messageId ? { ...m, status: 'read' } : m
+                  ));
+                })
+                .catch((err: any) => {
+                  // Log error for debugging
+                  console.error('❌ Failed to mark as read:', {
+                    status: err.response?.status,
+                    data: err.response?.data,
+                    message: err.message
+                  });
+                });
+            } else {
+              console.warn('⚠️ Cannot mark as read - invalid message ID:', latestMessage.messageId);
             }
-          });
+          } else {
+            console.log('ℹ️ No unread messages to mark');
+          }
         })
         .catch((err: any) => {
           console.error('Failed to load messages:', err);
@@ -1022,12 +1213,13 @@ const Messages = () => {
           ) : (
             <div className="space-y-3">
               {messages.map((msg: any) => (
-                <div key={msg.id} className={`flex ${msg.from === 'me' ? 'justify-end' : 'justify-start'}`}>
-                  <div className={`max-w-xs lg:max-w-md rounded-lg overflow-hidden ${
-                    msg.from === 'me' 
-                      ? 'bg-green-500 text-white' 
-                      : 'bg-white text-gray-800 shadow'
-                  }`}>
+                <div key={msg.id} className={`flex ${msg.from === 'me' ? 'justify-end' : 'justify-start'} group`}>
+                  <div className="flex items-start gap-2">
+                    <div className={`max-w-xs lg:max-w-md rounded-lg overflow-hidden ${
+                      msg.from === 'me' 
+                        ? 'bg-green-500 text-white' 
+                        : 'bg-white text-gray-800 shadow'
+                    }`}>
                     {/* Image Message */}
                     {msg.type === 'image' && msg.mediaUrl && (
                       <img 
@@ -1085,17 +1277,100 @@ const Messages = () => {
                     {/* Location Message */}
                     {msg.type === 'location' && (
                       <div className="px-4 py-3">
-                        <div className="flex items-start gap-3 p-3 bg-gray-100 rounded-lg">
-                          <div className="p-2 bg-red-100 rounded-full">
-                            <svg className="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                            </svg>
-                          </div>
-                          <div className="flex-1">
-                            <p className="font-medium text-sm text-gray-900">📍 Location</p>
-                            <p className="text-xs text-gray-600 mt-1">{msg.content}</p>
-                          </div>
+                        <div className="bg-gray-100 rounded-lg overflow-hidden">
+                          {(() => {
+                            // Extract coordinates from content
+                            const match = msg.content.match(/Location: ([-\d.]+), ([-\d.]+)/);
+                            if (match) {
+                              const lat = match[1];
+                              const lng = match[2];
+                              const googleMapsUrl = `https://www.google.com/maps?q=${lat},${lng}`;
+                              const staticMapUrl = `https://maps.googleapis.com/maps/api/staticmap?center=${lat},${lng}&zoom=15&size=400x200&markers=color:red%7C${lat},${lng}&key=YOUR_API_KEY`;
+                              
+                              return (
+                                <>
+                                  {/* Map Preview - Click to open in Google Maps */}
+                                  <a 
+                                    href={googleMapsUrl} 
+                                    target="_blank" 
+                                    rel="noopener noreferrer"
+                                    className="block hover:opacity-90 transition-opacity relative group"
+                                  >
+                                    <div className="w-full h-48 bg-gradient-to-br from-red-50 to-orange-50 flex items-center justify-center relative overflow-hidden">
+                                      {/* Background pattern */}
+                                      <div className="absolute inset-0 opacity-10">
+                                        <div className="absolute inset-0" style={{
+                                          backgroundImage: 'radial-gradient(circle at 2px 2px, #ef4444 1px, transparent 0)',
+                                          backgroundSize: '40px 40px'
+                                        }}></div>
+                                      </div>
+                                      
+                                      {/* Content */}
+                                      <div className="relative text-center z-10">
+                                        <div className="w-16 h-16 mx-auto mb-3 bg-red-500 rounded-full flex items-center justify-center shadow-lg">
+                                          <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                                          </svg>
+                                        </div>
+                                        <p className="text-sm font-medium text-gray-700">📍 Location Shared</p>
+                                        <p className="text-xs text-gray-500 mt-1">{lat}, {lng}</p>
+                                        <div className="mt-3 inline-flex items-center gap-1 px-3 py-1.5 bg-white rounded-full shadow text-xs text-blue-600 font-medium group-hover:bg-blue-50 transition-colors">
+                                          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                                          </svg>
+                                          Click to view map
+                                        </div>
+                                      </div>
+                                    </div>
+                                  </a>
+                                  <div className="p-3">
+                                    <div className="flex items-start gap-2">
+                                      <div className="p-2 bg-red-100 rounded-full flex-shrink-0">
+                                        <svg className="w-5 h-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                                        </svg>
+                                      </div>
+                                      <div className="flex-1">
+                                        <p className="font-medium text-sm text-gray-900">📍 Location</p>
+                                        <p className="text-xs text-gray-600 mt-1 whitespace-pre-line">{msg.content}</p>
+                                        <a 
+                                          href={googleMapsUrl}
+                                          target="_blank"
+                                          rel="noopener noreferrer"
+                                          className="inline-flex items-center gap-1 mt-2 text-xs text-blue-600 hover:text-blue-800 hover:underline"
+                                        >
+                                          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                                          </svg>
+                                          Open in Google Maps
+                                        </a>
+                                      </div>
+                                    </div>
+                                  </div>
+                                </>
+                              );
+                            }
+                            
+                            // Fallback if no coordinates found
+                            return (
+                              <div className="p-3">
+                                <div className="flex items-start gap-3">
+                                  <div className="p-2 bg-red-100 rounded-full">
+                                    <svg className="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                                    </svg>
+                                  </div>
+                                  <div className="flex-1">
+                                    <p className="font-medium text-sm text-gray-900">📍 Location</p>
+                                    <p className="text-xs text-gray-600 mt-1">{msg.content}</p>
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          })()}
                         </div>
                       </div>
                     )}
@@ -1117,19 +1392,47 @@ const Messages = () => {
                       </div>
                     )}
                     
-                    {/* Interactive Message (Buttons/List/CTA) */}
+                    {/* Interactive Message (Buttons/List/CTA/Location Request) */}
                     {msg.type === 'interactive' && (
                       <div className="px-4 py-3">
-                        <div className="flex items-start gap-2 p-3 bg-blue-50 rounded-lg border border-blue-200">
-                          <svg className="w-5 h-5 text-blue-600 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                          </svg>
-                          <div className="flex-1">
-                            <p className="text-sm text-blue-900 font-medium">Interactive Message</p>
-                            <p className="text-xs text-blue-700 mt-1">{msg.content}</p>
-                            <p className="text-xs text-blue-600 mt-1 italic">View in WhatsApp for full interaction</p>
+                        {msg.content.includes('[LOCATION REQUEST]') ? (
+                          // Location Request Message
+                          <div className="flex items-start gap-2 p-3 bg-pink-50 rounded-lg border border-pink-200">
+                            <svg className="w-5 h-5 text-pink-600 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                            </svg>
+                            <div className="flex-1">
+                              <p className="text-sm text-pink-900 font-medium">📍 Location Request</p>
+                              <p className="text-xs text-pink-700 mt-1">{msg.content.replace('[LOCATION REQUEST] ', '')}</p>
+                              <p className="text-xs text-pink-600 mt-1 italic">User will see a "Share Location" button in WhatsApp</p>
+                            </div>
                           </div>
-                        </div>
+                        ) : (
+                          // Other Interactive Messages
+                          <div className="flex items-start gap-2 p-3 bg-blue-50 rounded-lg border border-blue-200">
+                            <svg className="w-5 h-5 text-blue-600 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                            </svg>
+                            <div className="flex-1">
+                              <p className="text-sm text-blue-900 font-medium">Interactive Message</p>
+                              <p className="text-xs text-blue-700 mt-1">{msg.content}</p>
+                              <p className="text-xs text-blue-600 mt-1 italic">View in WhatsApp for full interaction</p>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                    
+                    {/* Sticker Message */}
+                    {msg.type === 'sticker' && msg.mediaUrl && (
+                      <div className="p-2">
+                        <img 
+                          src={msg.mediaUrl} 
+                          alt="Sticker" 
+                          className="w-32 h-32 object-contain cursor-pointer hover:scale-110 transition-transform"
+                          onClick={() => window.open(msg.mediaUrl, '_blank')}
+                        />
                       </div>
                     )}
                     
@@ -1140,8 +1443,77 @@ const Messages = () => {
                       </div>
                     )}
                     
+                    {/* Quoted/Replied Message */}
+                    {(msg.contextMessageContent || msg.contextMessageType) && (
+                      <div className="px-4 pt-2">
+                        <div className={`border-l-4 pl-3 py-2 rounded ${
+                          msg.from === 'me' ? 'border-green-300 bg-green-50/50' : 'border-gray-300 bg-gray-50'
+                        }`}>
+                          <p className="text-xs font-medium opacity-70 mb-1">
+                            {msg.from === 'me' ? 'You' : 'User'}
+                          </p>
+                          
+                          {/* Show media preview for image/sticker */}
+                          {msg.contextMessageType === 'image' && msg.contextMessageMediaUrl && (
+                            <div className="flex items-center gap-2 mb-1">
+                              <img 
+                                src={msg.contextMessageMediaUrl} 
+                                alt="Quoted" 
+                                className="w-12 h-12 object-cover rounded"
+                              />
+                              <p className="text-sm opacity-75 line-clamp-2">
+                                {msg.contextMessageContent || '[Image]'}
+                              </p>
+                            </div>
+                          )}
+                          
+                          {/* Show sticker preview */}
+                          {msg.contextMessageType === 'sticker' && msg.contextMessageMediaUrl && (
+                            <img 
+                              src={msg.contextMessageMediaUrl} 
+                              alt="Sticker" 
+                              className="w-16 h-16 object-contain"
+                            />
+                          )}
+                          
+                          {/* Show media type indicator for other media */}
+                          {['video', 'audio', 'document'].includes(msg.contextMessageType) && (
+                            <div className="flex items-center gap-2">
+                              <div className="w-10 h-10 bg-gray-200 rounded flex items-center justify-center">
+                                {msg.contextMessageType === 'video' && (
+                                  <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                                  </svg>
+                                )}
+                                {msg.contextMessageType === 'audio' && (
+                                  <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
+                                  </svg>
+                                )}
+                                {msg.contextMessageType === 'document' && (
+                                  <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                                  </svg>
+                                )}
+                              </div>
+                              <p className="text-sm opacity-75 line-clamp-2">
+                                {msg.contextMessageContent || `[${msg.contextMessageType.toUpperCase()}]`}
+                              </p>
+                            </div>
+                          )}
+                          
+                          {/* Show text content for text messages */}
+                          {(!msg.contextMessageType || msg.contextMessageType === 'text') && msg.contextMessageContent && (
+                            <p className="text-sm opacity-75 line-clamp-2">
+                              {msg.contextMessageContent}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                    
                     {/* Text Content / Caption */}
-                    {msg.content && !['document', 'location', 'contacts', 'interactive', 'reaction'].includes(msg.type) && (
+                    {msg.content && !['document', 'location', 'contacts', 'interactive', 'reaction', 'sticker'].includes(msg.type) && (
                       <div className="px-4 py-2">
                         <p>{msg.content}</p>
                       </div>
@@ -1160,10 +1532,24 @@ const Messages = () => {
                         <span className="flex items-center ml-2">
                           {msg.status === 'sent' && <Check className="w-3 h-3" />}
                           {msg.status === 'delivered' && <CheckCheck className="w-3 h-3" />}
-                          {msg.status === 'read' && <CheckCheck className="w-3 h-3 text-blue-300" />}
+                          {msg.status === 'read' && <CheckCheck className="w-3 h-3 text-blue-500" />}
                         </span>
                       )}
                     </div>
+                  </div>
+                    
+                  {/* Reply Button - shows on hover, positioned to the right */}
+                  {msg.from !== 'me' && msg.messageId && msg.messageId.startsWith('wamid.') && (
+                    <button
+                      onClick={() => setReplyingTo(msg)}
+                      className="opacity-0 group-hover:opacity-100 transition-opacity p-1.5 bg-gray-200 hover:bg-gray-300 rounded-full flex-shrink-0 mt-2"
+                      title="Reply to this message"
+                    >
+                      <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
+                      </svg>
+                    </button>
+                  )}
                   </div>
                 </div>
               ))}
@@ -1186,7 +1572,7 @@ const Messages = () => {
           </div>
 
           {/* Message Mode Toggle */}
-          <div className="grid grid-cols-4 gap-2 mb-3">
+          <div className="flex flex-wrap gap-2 mb-3">
             <button
               onClick={() => {
                 setMessageMode('text');
@@ -1330,6 +1716,43 @@ const Messages = () => {
               <span className="text-xs">Sticker</span>
             </button>
             <button
+              onClick={() => {
+                setMessageMode('location_request');
+                setSelectedTemplate(null);
+                setTemplateVariables([]);
+                handleClearFile();
+              }}
+              className={`px-3 py-2 rounded-lg flex items-center justify-center gap-1 transition-colors ${
+                messageMode === 'location_request'
+                  ? 'bg-pink-600 text-white'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              }`}
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
+              <span className="text-xs">Request Loc</span>
+            </button>
+            <button
+              onClick={() => {
+                setMessageMode('address');
+                setSelectedTemplate(null);
+                setTemplateVariables([]);
+                handleClearFile();
+              }}
+              className={`px-3 py-2 rounded-lg flex items-center justify-center gap-1 transition-colors ${
+                messageMode === 'address'
+                  ? 'bg-orange-600 text-white'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              }`}
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+              </svg>
+              <span className="text-xs">Address</span>
+            </button>
+            <button
               onClick={() => setMessageMode('template')}
               className={`px-3 py-2 rounded-lg flex items-center justify-center gap-1 transition-colors ${
                 messageMode === 'template'
@@ -1345,6 +1768,92 @@ const Messages = () => {
           {/* Text Message Mode */}
           {messageMode === 'text' && (
             <div className="space-y-3">
+              {/* Replying To Preview */}
+              {replyingTo && (
+                <div className="p-3 bg-blue-50 rounded-lg border-l-4 border-blue-500">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex-1">
+                      <p className="text-xs font-medium text-blue-900 mb-1">
+                        ↩️ Replying to:
+                      </p>
+                      
+                      {/* Show media preview based on message type */}
+                      <div className="flex items-start gap-2">
+                        {/* Image preview */}
+                        {replyingTo.type === 'image' && replyingTo.mediaUrl && (
+                          <img 
+                            src={replyingTo.mediaUrl} 
+                            alt="Preview" 
+                            className="w-12 h-12 object-cover rounded flex-shrink-0"
+                          />
+                        )}
+                        
+                        {/* Sticker preview */}
+                        {replyingTo.type === 'sticker' && replyingTo.mediaUrl && (
+                          <img 
+                            src={replyingTo.mediaUrl} 
+                            alt="Sticker" 
+                            className="w-12 h-12 object-contain flex-shrink-0"
+                          />
+                        )}
+                        
+                        {/* Video/Audio/Document icon */}
+                        {['video', 'audio', 'document'].includes(replyingTo.type) && (
+                          <div className="w-12 h-12 bg-blue-100 rounded flex items-center justify-center flex-shrink-0">
+                            {replyingTo.type === 'video' && (
+                              <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                              </svg>
+                            )}
+                            {replyingTo.type === 'audio' && (
+                              <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
+                              </svg>
+                            )}
+                            {replyingTo.type === 'document' && (
+                              <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                              </svg>
+                            )}
+                          </div>
+                        )}
+                        
+                        {/* Location icon */}
+                        {replyingTo.type === 'location' && (
+                          <div className="w-12 h-12 bg-red-100 rounded flex items-center justify-center flex-shrink-0">
+                            <svg className="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                            </svg>
+                          </div>
+                        )}
+                        
+                        {/* Contact icon */}
+                        {replyingTo.type === 'contacts' && (
+                          <div className="w-12 h-12 bg-cyan-100 rounded flex items-center justify-center flex-shrink-0">
+                            <svg className="w-6 h-6 text-cyan-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                            </svg>
+                          </div>
+                        )}
+                        
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm text-blue-700 line-clamp-2">
+                            {replyingTo.content || `[${replyingTo.type?.toUpperCase() || 'MEDIA'}]`}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => setReplyingTo(null)}
+                      className="p-1 text-blue-600 hover:text-blue-800 transition-colors flex-shrink-0"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+              )}
+              
               {/* Quick Replies Toggle */}
               <div className="flex items-center justify-between">
                 <button
@@ -1423,15 +1932,123 @@ const Messages = () => {
               )}
 
               {/* Message Input */}
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  placeholder="Type a message..."
-                  value={newMessage}
-                  onChange={(e: any) => setNewMessage(e.target.value)}
-                  onKeyDown={(e: any) => e.key === 'Enter' && handleSendMessage()}
-                  className="flex-1 px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
-                />
+              <div className="flex gap-2 relative">
+                <div className="flex-1 relative">
+                  <input
+                    type="text"
+                    placeholder="Type a message..."
+                    value={newMessage}
+                    onChange={(e: any) => {
+                      setNewMessage(e.target.value);
+                      handleTyping();
+                    }}
+                    onKeyDown={(e: any) => e.key === 'Enter' && handleSendMessage()}
+                    className="w-full px-4 py-2 pr-12 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                  />
+                  <button
+                    onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+                    className="absolute right-2 top-1/2 transform -translate-y-1/2 p-1.5 hover:bg-gray-100 rounded-full transition-colors"
+                    title="Add emoji"
+                  >
+                    <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  </button>
+                  
+                  {/* Emoji Picker */}
+                  {showEmojiPicker && (
+                    <div className="absolute bottom-full mb-2 right-0 bg-white border rounded-lg shadow-lg p-3 w-80 max-h-64 overflow-y-auto z-50">
+                      <div className="flex items-center justify-between mb-2">
+                        <p className="text-sm font-medium text-gray-700">Select Emoji</p>
+                        <button
+                          onClick={() => setShowEmojiPicker(false)}
+                          className="p-1 hover:bg-gray-100 rounded"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      </div>
+                      <div className="grid grid-cols-8 gap-1">
+                        {[
+                          '😀', '😃', '😄', '😁', '😆', '😅', '🤣', '😂',
+                          '🙂', '🙃', '😉', '😊', '😇', '🥰', '😍', '🤩',
+                          '😘', '😗', '😚', '😙', '😋', '😛', '😜', '🤪',
+                          '😝', '🤑', '🤗', '🤭', '🤫', '🤔', '🤐', '🤨',
+                          '😐', '😑', '😶', '😏', '😒', '🙄', '😬', '🤥',
+                          '😌', '😔', '😪', '🤤', '😴', '😷', '🤒', '🤕',
+                          '🤢', '🤮', '🤧', '🥵', '🥶', '😶‍🌫️', '🥴', '😵',
+                          '🤯', '🤠', '🥳', '😎', '🤓', '🧐', '😕', '😟',
+                          '🙁', '☹️', '😮', '😯', '😲', '😳', '🥺', '😦',
+                          '😧', '😨', '😰', '😥', '😢', '😭', '😱', '😖',
+                          '😣', '😞', '😓', '😩', '😫', '🥱', '😤', '😡',
+                          '😠', '🤬', '😈', '👿', '💀', '☠️', '💩', '🤡',
+                          '👋', '🤚', '🖐️', '✋', '🖖', '👌', '🤌', '🤏',
+                          '✌️', '🤞', '🤟', '🤘', '🤙', '👈', '👉', '👆',
+                          '🖕', '👇', '☝️', '👍', '👎', '✊', '👊', '🤛',
+                          '🤜', '👏', '🙌', '👐', '🤲', '🤝', '🙏', '✍️',
+                          '💅', '🤳', '💪', '🦾', '🦿', '🦵', '🦶', '👂',
+                          '🦻', '👃', '🧠', '🦷', '🦴', '👀', '👁️', '👅',
+                          '👄', '💋', '🩸', '❤️', '🧡', '💛', '💚', '💙',
+                          '💜', '🖤', '🤍', '🤎', '💔', '❤️‍🔥', '❤️‍🩹', '💕',
+                          '💞', '💓', '💗', '💖', '💘', '💝', '💟', '☮️',
+                          '✝️', '☪️', '🕉️', '☸️', '✡️', '🔯', '🕎', '☯️',
+                          '☦️', '🛐', '⛎', '♈', '♉', '♊', '♋', '♌',
+                          '♍', '♎', '♏', '♐', '♑', '♒', '♓', '🆔',
+                          '⚛️', '🉑', '☢️', '☣️', '📴', '📳', '🈶', '🈚',
+                          '🈸', '🈺', '🈷️', '✴️', '🆚', '💮', '🉐', '㊙️',
+                          '㊗️', '🈴', '🈵', '🈹', '🈲', '🅰️', '🅱️', '🆎',
+                          '🆑', '🅾️', '🆘', '❌', '⭕', '🛑', '⛔', '📛',
+                          '🚫', '💯', '💢', '♨️', '🚷', '🚯', '🚳', '🚱',
+                          '🔞', '📵', '🚭', '❗', '❕', '❓', '❔', '‼️',
+                          '⁉️', '🔅', '🔆', '〽️', '⚠️', '🚸', '🔱', '⚜️',
+                          '🔰', '♻️', '✅', '🈯', '💹', '❇️', '✳️', '❎',
+                          '🌐', '💠', 'Ⓜ️', '🌀', '💤', '🏧', '🚾', '♿',
+                          '🅿️', '🈳', '🈂️', '🛂', '🛃', '🛄', '🛅', '🚹',
+                          '🚺', '🚼', '⚧️', '🚻', '🚮', '🎦', '📶', '🈁',
+                          '🔣', 'ℹ️', '🔤', '🔡', '🔠', '🆖', '🆗', '🆙',
+                          '🆒', '🆕', '🆓', '0️⃣', '1️⃣', '2️⃣', '3️⃣', '4️⃣',
+                          '5️⃣', '6️⃣', '7️⃣', '8️⃣', '9️⃣', '🔟', '🔢', '#️⃣',
+                          '*️⃣', '⏏️', '▶️', '⏸️', '⏯️', '⏹️', '⏺️', '⏭️',
+                          '⏮️', '⏩', '⏪', '⏫', '⏬', '◀️', '🔼', '🔽',
+                          '➡️', '⬅️', '⬆️', '⬇️', '↗️', '↘️', '↙️', '↖️',
+                          '↕️', '↔️', '↪️', '↩️', '⤴️', '⤵️', '🔀', '🔁',
+                          '🔂', '🔄', '🔃', '🎵', '🎶', '➕', '➖', '➗',
+                          '✖️', '♾️', '💲', '💱', '™️', '©️', '®️', '〰️',
+                          '➰', '➿', '🔚', '🔙', '🔛', '🔝', '🔜', '✔️',
+                          '☑️', '🔘', '🔴', '🟠', '🟡', '🟢', '🔵', '🟣',
+                          '⚫', '⚪', '🟤', '🔺', '🔻', '🔸', '🔹', '🔶',
+                          '🔷', '🔳', '🔲', '▪️', '▫️', '◾', '◽', '◼️',
+                          '◻️', '🟥', '🟧', '🟨', '🟩', '🟦', '🟪', '⬛',
+                          '⬜', '🟫', '🔈', '🔇', '🔉', '🔊', '🔔', '🔕',
+                          '📣', '📢', '👁️‍🗨️', '💬', '💭', '🗯️', '♠️', '♣️',
+                          '♥️', '♦️', '🃏', '🎴', '🀄', '🕐', '🕑', '🕒',
+                          '🕓', '🕔', '🕕', '🕖', '🕗', '🕘', '🕙', '🕚',
+                          '🕛', '🕜', '🕝', '🕞', '🕟', '🕠', '🕡', '🕢',
+                          '🕣', '🕤', '🕥', '🕦', '🕧', '👍', '👎', '✌️',
+                          '🤝', '🙏', '💪', '🎉', '🎊', '🎈', '🎁', '🏆',
+                          '🥇', '🥈', '🥉', '⚽', '🏀', '🏈', '⚾', '🥎',
+                          '🎾', '🏐', '🏉', '🥏', '🎱', '🪀', '🏓', '🏸',
+                          '🏒', '🏑', '🥍', '🏏', '🪃', '🥅', '⛳', '🪁',
+                          '🏹', '🎣', '🤿', '🥊', '🥋', '🎽', '🛹', '🛼',
+                          '🛷', '⛸️', '🥌', '🎿', '⛷️', '🏂', '🪂', '🏋️',
+                          '🤼', '🤸', '🤺', '⛹️', '🤾', '🏌️', '🏇', '🧘',
+                          '🏄', '🏊', '🤽', '🚣', '🧗', '🚵', '🚴', '🏆'
+                        ].map((emoji, index) => (
+                          <button
+                            key={index}
+                            onClick={() => {
+                              setNewMessage(newMessage + emoji);
+                              setShowEmojiPicker(false);
+                            }}
+                            className="text-2xl hover:bg-gray-100 rounded p-1 transition-colors"
+                            title={emoji}
+                          >
+                            {emoji}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
                 <button
                   onClick={handleSendMessage}
                   className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center gap-2"
@@ -2269,6 +2886,195 @@ const Messages = () => {
               >
                 <Send className="w-4 h-4" />
                 Send Sticker
+              </button>
+            </div>
+          )}
+
+          {/* Location Request Mode */}
+          {messageMode === 'location_request' && (
+            <div className="space-y-3">
+              <div className="p-4 bg-pink-50 rounded-lg border border-pink-200">
+                <p className="text-sm text-pink-800 mb-2">
+                  <strong>📍 Request Location</strong>
+                </p>
+                <p className="text-xs text-pink-700">
+                  Ask the user to share their current location. They will see a button to share their location in WhatsApp.
+                </p>
+              </div>
+
+              {/* Request Message */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Request Message *
+                </label>
+                <textarea
+                  placeholder="Please share your location so we can assist you better."
+                  value={locationRequestText}
+                  onChange={(e) => setLocationRequestText(e.target.value)}
+                  rows={3}
+                  className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500"
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  This message will be shown with a "Share Location" button
+                </p>
+              </div>
+
+              {/* Example Messages */}
+              <div className="p-4 bg-gray-50 rounded-lg border">
+                <p className="text-sm font-medium text-gray-700 mb-2">Example Messages:</p>
+                <div className="space-y-2">
+                  <button
+                    onClick={() => setLocationRequestText('Please share your location so we can assist you better.')}
+                    className="w-full text-left p-2 bg-white rounded border hover:border-pink-500 transition-colors text-sm"
+                  >
+                    "Please share your location so we can assist you better."
+                  </button>
+                  <button
+                    onClick={() => setLocationRequestText('Where are you located? Share your location to help us serve you.')}
+                    className="w-full text-left p-2 bg-white rounded border hover:border-pink-500 transition-colors text-sm"
+                  >
+                    "Where are you located? Share your location to help us serve you."
+                  </button>
+                  <button
+                    onClick={() => setLocationRequestText('For delivery, please share your current location.')}
+                    className="w-full text-left p-2 bg-white rounded border hover:border-pink-500 transition-colors text-sm"
+                  >
+                    "For delivery, please share your current location."
+                  </button>
+                </div>
+              </div>
+
+              {/* Send Button */}
+              <button
+                onClick={handleSendMessage}
+                disabled={!locationRequestText.trim()}
+                className="w-full px-6 py-2 bg-pink-600 text-white rounded-lg hover:bg-pink-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              >
+                <Send className="w-4 h-4" />
+                Request Location
+              </button>
+            </div>
+          )}
+
+          {/* Address Mode */}
+          {messageMode === 'address' && (
+            <div className="space-y-3">
+              <div className="p-4 bg-orange-50 rounded-lg border border-orange-200">
+                <p className="text-sm text-orange-800 mb-2">
+                  <strong>🏠 Send Address</strong>
+                </p>
+                <p className="text-xs text-orange-700">
+                  Send a formatted address as a contact card. The recipient can tap to open it in Maps.
+                </p>
+              </div>
+
+              {/* Name */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Name / Place *
+                </label>
+                <input
+                  type="text"
+                  placeholder="John Doe / ACME Corporation"
+                  value={addressName}
+                  onChange={(e) => setAddressName(e.target.value)}
+                  className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                />
+              </div>
+
+              {/* Street */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Street Address *
+                </label>
+                <input
+                  type="text"
+                  placeholder="123 Main Street"
+                  value={addressStreet}
+                  onChange={(e) => setAddressStreet(e.target.value)}
+                  className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                />
+              </div>
+
+              {/* City & State */}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    City *
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="Kuala Lumpur"
+                    value={addressCity}
+                    onChange={(e) => setAddressCity(e.target.value)}
+                    className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    State
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="Wilayah Persekutuan"
+                    value={addressState}
+                    onChange={(e) => setAddressState(e.target.value)}
+                    className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                  />
+                </div>
+              </div>
+
+              {/* Zip & Country */}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Zip Code
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="50000"
+                    value={addressZip}
+                    onChange={(e) => setAddressZip(e.target.value)}
+                    className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Country *
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="Malaysia"
+                    value={addressCountry}
+                    onChange={(e) => setAddressCountry(e.target.value)}
+                    className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                  />
+                </div>
+              </div>
+
+              {/* Address Type */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Address Type
+                </label>
+                <select
+                  value={addressType}
+                  onChange={(e) => setAddressType(e.target.value)}
+                  className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                >
+                  <option value="HOME">Home</option>
+                  <option value="WORK">Work</option>
+                </select>
+              </div>
+
+              {/* Send Button */}
+              <button
+                onClick={handleSendMessage}
+                disabled={!addressName.trim() || !addressStreet.trim() || !addressCity.trim() || !addressCountry.trim()}
+                className="w-full px-6 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              >
+                <Send className="w-4 h-4" />
+                Send Address
               </button>
             </div>
           )}

@@ -165,7 +165,7 @@ export const uploadMedia = async (req: AuthRequest, res: Response) => {
 
 export const sendMediaMessageController = async (req: AuthRequest, res: Response) => {
   try {
-    const { to, mediaId, type, caption, filename } = req.body;
+    const { to, mediaId, type, caption, filename, contextMessageId } = req.body;
     
     if (!to || !mediaId || !type) {
       return res.status(400).json({ error: 'Missing required fields' });
@@ -174,7 +174,23 @@ export const sendMediaMessageController = async (req: AuthRequest, res: Response
     // Normalize phone number
     const normalizedPhone = to.replace(/^\+/, '');
 
-    const result = await sendMediaMessage(to, mediaId, type, caption, filename);
+    const result = await sendMediaMessage(to, mediaId, type, caption, filename, contextMessageId);
+    
+    // Find the original message to get its content and media (if replying)
+    let contextMessageContent = null;
+    let contextMessageType = null;
+    let contextMessageMediaUrl = null;
+    
+    if (contextMessageId) {
+      const originalMessage = await Message.findOne({
+        where: { message_id: contextMessageId }
+      });
+      if (originalMessage) {
+        contextMessageContent = originalMessage.content;
+        contextMessageType = originalMessage.type;
+        contextMessageMediaUrl = originalMessage.media_url;
+      }
+    }
     
     // Save message to database
     const savedMessage = await Message.create({
@@ -186,6 +202,10 @@ export const sendMediaMessageController = async (req: AuthRequest, res: Response
       status: 'sent',
       message_id: result.messages[0].id,
       media_id: mediaId,
+      context_message_id: contextMessageId,
+      context_message_content: contextMessageContent,
+      context_message_type: contextMessageType,
+      context_message_media_url: contextMessageMediaUrl,
     });
 
     // Update conversation
@@ -549,6 +569,22 @@ export const sendTextWithContextController = async (req: AuthRequest, res: Respo
     const { sendTextWithContext } = require('../services/whatsapp.service');
     const result = await sendTextWithContext(to, message, contextMessageId);
     
+    // Find the original message to get its content and media
+    let contextMessageContent = null;
+    let contextMessageType = null;
+    let contextMessageMediaUrl = null;
+    
+    if (contextMessageId) {
+      const originalMessage = await Message.findOne({
+        where: { message_id: contextMessageId }
+      });
+      if (originalMessage) {
+        contextMessageContent = originalMessage.content;
+        contextMessageType = originalMessage.type;
+        contextMessageMediaUrl = originalMessage.media_url;
+      }
+    }
+    
     // Save message to database
     const savedMessage = await Message.create({
       user_id: req.user!.id,
@@ -558,6 +594,10 @@ export const sendTextWithContextController = async (req: AuthRequest, res: Respo
       type: 'text',
       status: 'sent',
       message_id: result.messages[0].id,
+      context_message_id: contextMessageId,
+      context_message_content: contextMessageContent,
+      context_message_type: contextMessageType,
+      context_message_media_url: contextMessageMediaUrl,
     });
 
     // Update conversation
@@ -586,7 +626,7 @@ export const sendTextWithContextController = async (req: AuthRequest, res: Respo
 
 export const sendStickerController = async (req: AuthRequest, res: Response) => {
   try {
-    const { to, mediaId, stickerUrl } = req.body;
+    const { to, mediaId, stickerUrl, contextMessageId } = req.body;
     
     if (!to || (!mediaId && !stickerUrl)) {
       return res.status(400).json({ error: 'Missing required fields (to, and either mediaId or stickerUrl)' });
@@ -597,10 +637,26 @@ export const sendStickerController = async (req: AuthRequest, res: Response) => 
 
     const { sendSticker, sendStickerByUrl } = require('../services/whatsapp.service');
     
-    // Send sticker by media ID or URL
+    // Send sticker by media ID or URL (with optional context)
     const result = mediaId 
-      ? await sendSticker(to, mediaId)
-      : await sendStickerByUrl(to, stickerUrl);
+      ? await sendSticker(to, mediaId, contextMessageId)
+      : await sendStickerByUrl(to, stickerUrl, contextMessageId);
+    
+    // Find the original message to get its content and media (if replying)
+    let contextMessageContent = null;
+    let contextMessageType = null;
+    let contextMessageMediaUrl = null;
+    
+    if (contextMessageId) {
+      const originalMessage = await Message.findOne({
+        where: { message_id: contextMessageId }
+      });
+      if (originalMessage) {
+        contextMessageContent = originalMessage.content;
+        contextMessageType = originalMessage.type;
+        contextMessageMediaUrl = originalMessage.media_url;
+      }
+    }
     
     // Save message to database
     const savedMessage = await Message.create({
@@ -613,6 +669,10 @@ export const sendStickerController = async (req: AuthRequest, res: Response) => 
       message_id: result.messages[0].id,
       media_id: mediaId,
       media_url: stickerUrl,
+      context_message_id: contextMessageId,
+      context_message_content: contextMessageContent,
+      context_message_type: contextMessageType,
+      context_message_media_url: contextMessageMediaUrl,
     });
 
     // Update conversation
@@ -647,8 +707,12 @@ export const markMessageAsReadController = async (req: AuthRequest, res: Respons
       return res.status(400).json({ error: 'Message ID is required' });
     }
 
+    console.log('📨 Marking message as read:', messageId);
+
     const { markMessageAsRead } = require('../services/whatsapp.service');
     const result = await markMessageAsRead(messageId);
+    
+    console.log('✅ WhatsApp API response:', result);
     
     // Update message status in database (optional)
     await Message.update(
@@ -658,7 +722,142 @@ export const markMessageAsReadController = async (req: AuthRequest, res: Respons
     
     res.json({ success: true, result });
   } catch (error: any) {
-    console.error('Mark message as read error:', error);
-    res.status(500).json({ error: error.message || 'Failed to mark message as read' });
+    console.error('❌ Mark message as read error:', {
+      message: error.message,
+      response: error.response?.data,
+      status: error.response?.status
+    });
+    
+    // Return more detailed error information
+    res.status(error.response?.status || 500).json({ 
+      error: error.response?.data?.error?.message || error.message || 'Failed to mark message as read',
+      details: error.response?.data
+    });
+  }
+};
+
+export const sendTypingIndicatorController = async (req: AuthRequest, res: Response) => {
+  try {
+    const { to, messageId } = req.body;
+    
+    if (!to || !messageId) {
+      return res.status(400).json({ error: 'Recipient number and message ID are required' });
+    }
+
+    const { sendTypingIndicator } = require('../services/whatsapp.service');
+    const result = await sendTypingIndicator(to, messageId);
+    
+    res.json({ success: true, result });
+  } catch (error: any) {
+    console.error('Send typing indicator error:', error);
+    res.status(500).json({ error: error.message || 'Failed to send typing indicator' });
+  }
+};
+
+export const requestLocationController = async (req: AuthRequest, res: Response) => {
+  try {
+    const { to, bodyText } = req.body;
+    
+    if (!to || !bodyText) {
+      return res.status(400).json({ error: 'Recipient number and body text are required' });
+    }
+
+    // Normalize phone number
+    const normalizedPhone = to.replace(/^\+/, '');
+
+    const { requestLocation } = require('../services/whatsapp.service');
+    const result = await requestLocation(to, bodyText);
+    
+    // Save message to database
+    const savedMessage = await Message.create({
+      user_id: req.user!.id,
+      from_number: process.env.WHATSAPP_PHONE_NUMBER_ID || '',
+      to_number: normalizedPhone,
+      content: bodyText,
+      type: 'interactive',
+      status: 'sent',
+      message_id: result.messages[0].id,
+    });
+
+    // Update conversation
+    const displayMessage = `[LOCATION REQUEST] ${bodyText}`;
+    const [conversation, created] = await Conversation.findOrCreate({
+      where: { user_id: req.user!.id, phone_number: normalizedPhone },
+      defaults: {
+        last_message: displayMessage,
+        last_message_time: new Date(),
+      },
+    });
+
+    if (!created) {
+      await conversation.update({
+        last_message: displayMessage,
+        last_message_time: new Date(),
+      });
+    }
+    
+    res.json({ success: true, messageId: result.messages[0].id, message: savedMessage.toJSON() });
+  } catch (error: any) {
+    console.error('Request location error:', error);
+    res.status(500).json({ error: error.message || 'Failed to request location' });
+  }
+};
+
+export const sendAddressController = async (req: AuthRequest, res: Response) => {
+  try {
+    const { to, name, address } = req.body;
+    
+    if (!to || !name || !address) {
+      return res.status(400).json({ error: 'Recipient number, name, and address are required' });
+    }
+
+    // Normalize phone number
+    const normalizedPhone = to.replace(/^\+/, '');
+
+    const { sendAddress } = require('../services/whatsapp.service');
+    const result = await sendAddress(to, name, address);
+    
+    // Format address for display
+    const addressParts = [
+      address.street,
+      address.city,
+      address.state,
+      address.zip,
+      address.country
+    ].filter(Boolean);
+    const addressText = addressParts.join(', ');
+    
+    // Save message to database
+    const savedMessage = await Message.create({
+      user_id: req.user!.id,
+      from_number: process.env.WHATSAPP_PHONE_NUMBER_ID || '',
+      to_number: normalizedPhone,
+      content: `Address: ${name} - ${addressText}`,
+      type: 'contacts',
+      status: 'sent',
+      message_id: result.messages[0].id,
+    });
+
+    // Update conversation
+    const displayMessage = `[ADDRESS] ${name}`;
+    const [conversation, created] = await Conversation.findOrCreate({
+      where: { user_id: req.user!.id, phone_number: normalizedPhone },
+      defaults: {
+        last_message: displayMessage,
+        last_message_time: new Date(),
+      },
+    });
+
+    if (!created) {
+      await conversation.update({
+        last_message: displayMessage,
+        last_message_time: new Date(),
+      });
+    }
+    
+    res.json({ success: true, messageId: result.messages[0].id, message: savedMessage.toJSON() });
+  } catch (error: any) {
+    console.error('Send address error:', error);
+    res.status(500).json({ error: error.message || 'Failed to send address' });
   }
 };
