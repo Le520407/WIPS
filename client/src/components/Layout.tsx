@@ -1,5 +1,5 @@
 import { Outlet, Link, useLocation } from 'react-router-dom';
-import { LayoutDashboard, MessageSquare, FileText, LogOut } from 'lucide-react';
+import { LayoutDashboard, MessageSquare, FileText, FolderOpen, LogOut, Shield, AlertTriangle, TrendingUp, BookOpen, Zap, Library, GitCompare } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import DemoModeBanner from './DemoModeBanner';
 
@@ -13,7 +13,15 @@ const Layout = () => {
     ...(isDemoMode ? [{ path: '/demo-info', icon: LayoutDashboard, label: 'Demo Info' }] : []),
     { path: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
     { path: '/messages', icon: MessageSquare, label: 'Messages' },
-    { path: '/templates', icon: FileText, label: 'Templates' }
+    { path: '/templates', icon: FileText, label: 'Templates' },
+    { path: '/template-groups', icon: FolderOpen, label: 'Template Groups' },
+    { path: '/quality', icon: Shield, label: 'Quality Monitor' },
+    { path: '/paused', icon: AlertTriangle, label: 'Paused Templates' },
+    { path: '/marketing-limits', icon: TrendingUp, label: 'Marketing Limits' },
+    { path: '/pacing', icon: Zap, label: 'Pacing Monitor' },
+    { path: '/template-library', icon: Library, label: 'Template Library' },
+    { path: '/template-comparison', icon: GitCompare, label: 'Template Comparison' },
+    { path: '/review-tips', icon: BookOpen, label: 'Review Tips' }
   ];
 
   return (

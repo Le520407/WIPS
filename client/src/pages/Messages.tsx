@@ -750,7 +750,28 @@ const Messages = () => {
           setAddressType('HOME');
         } else {
           // Send template message
-          alert('Template sending via real API not implemented yet');
+          const components = [];
+          
+          // Add body parameters if there are variables
+          if (templateVariables.length > 0) {
+            components.push({
+              type: 'body',
+              parameters: templateVariables.map(value => ({
+                type: 'text',
+                text: value
+              }))
+            });
+          }
+          
+          await templateService.sendTemplate(
+            recipient,
+            selectedTemplate.name,
+            selectedTemplate.language,
+            components.length > 0 ? components : undefined
+          );
+          
+          setSelectedTemplate(null);
+          setTemplateVariables([]);
         }
         
         // Reload messages for the current conversation instead of reloading the page
@@ -775,8 +796,29 @@ const Messages = () => {
     setSelectedTemplate(template);
     
     if (template) {
+      // Calculate variable count from template body or components
+      let varCount = 0;
+      
+      // Try to get body text from different possible structures
+      let bodyText = '';
+      if (template.body) {
+        bodyText = template.body;
+      } else if (template.components) {
+        const bodyComponent = template.components.find((c: any) => c.type === 'BODY');
+        if (bodyComponent) {
+          bodyText = bodyComponent.text || '';
+        }
+      }
+      
+      // Count parameters in the body text ({{1}}, {{2}}, etc.)
+      if (bodyText) {
+        const matches = bodyText.match(/\{\{\d+\}\}/g);
+        varCount = matches ? matches.length : 0;
+      }
+      
+      console.log(`📝 Template "${template.name}" has ${varCount} parameter(s)`);
+      
       // Initialize variable inputs
-      const varCount = template.variableCount || 0;
       setTemplateVariables(new Array(varCount).fill(''));
     }
   };
@@ -790,7 +832,19 @@ const Messages = () => {
   const getTemplatePreview = () => {
     if (!selectedTemplate) return '';
     
-    let preview = selectedTemplate.body;
+    // Get body text from different possible structures
+    let bodyText = '';
+    if (selectedTemplate.body) {
+      bodyText = selectedTemplate.body;
+    } else if (selectedTemplate.components) {
+      const bodyComponent = selectedTemplate.components.find((c: any) => c.type === 'BODY');
+      if (bodyComponent) {
+        bodyText = bodyComponent.text || '';
+      }
+    }
+    
+    // Replace variables with values
+    let preview = bodyText;
     templateVariables.forEach((value, index) => {
       preview = preview.replace(`{{${index + 1}}}`, value || `[变量${index + 1}]`);
     });

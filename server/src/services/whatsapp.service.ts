@@ -1051,3 +1051,582 @@ export const sendAddress = async (
     throw error;
   }
 };
+
+
+// ==================== Template Groups ====================
+
+const WABA_ID = process.env.WHATSAPP_BUSINESS_ACCOUNT_ID;
+
+export const createTemplateGroup = async (name: string, description: string, templateIds: (string | number)[]) => {
+  try {
+    console.log('📦 Creating template group:', { name, description, templateIds });
+    
+    // Convert template IDs to the format WhatsApp API expects
+    const templates = templateIds.map(id => ({ id: id.toString() }));
+    
+    const response = await axios.post(
+      `${WHATSAPP_API_URL}/${API_VERSION}/${WABA_ID}/template_groups`,
+      {
+        name,
+        description,
+        whatsapp_business_templates: templates
+      },
+      {
+        headers: {
+          'Authorization': `Bearer ${ACCESS_TOKEN}`,
+          'Content-Type': 'application/json'
+        }
+      }
+    );
+    
+    console.log('✅ Template group created:', response.data);
+    return response.data;
+  } catch (error: any) {
+    console.error('❌ Create template group error:', error.response?.data || error.message);
+    throw error;
+  }
+};
+
+export const getTemplateGroup = async (groupId: string) => {
+  try {
+    console.log('📦 Getting template group:', groupId);
+    
+    const response = await axios.get(
+      `${WHATSAPP_API_URL}/${API_VERSION}/${groupId}`,
+      {
+        headers: {
+          'Authorization': `Bearer ${ACCESS_TOKEN}`
+        }
+      }
+    );
+    
+    console.log('✅ Template group retrieved');
+    return response.data;
+  } catch (error: any) {
+    console.error('❌ Get template group error:', error.response?.data || error.message);
+    throw error;
+  }
+};
+
+export const updateTemplateGroup = async (
+  groupId: string, 
+  updates: {
+    name?: string;
+    description?: string;
+    add_templates?: number[];
+    remove_templates?: number[];
+  }
+) => {
+  try {
+    console.log('📦 Updating template group:', groupId, updates);
+    
+    const response = await axios.post(
+      `${WHATSAPP_API_URL}/${API_VERSION}/${groupId}`,
+      updates,
+      {
+        headers: {
+          'Authorization': `Bearer ${ACCESS_TOKEN}`,
+          'Content-Type': 'application/json'
+        }
+      }
+    );
+    
+    console.log('✅ Template group updated');
+    return response.data;
+  } catch (error: any) {
+    console.error('❌ Update template group error:', error.response?.data || error.message);
+    throw error;
+  }
+};
+
+export const deleteTemplateGroup = async (groupId: string) => {
+  try {
+    console.log('📦 Deleting template group:', groupId);
+    
+    const response = await axios.delete(
+      `${WHATSAPP_API_URL}/${API_VERSION}/${groupId}`,
+      {
+        headers: {
+          'Authorization': `Bearer ${ACCESS_TOKEN}`
+        }
+      }
+    );
+    
+    console.log('✅ Template group deleted');
+    return response.data;
+  } catch (error: any) {
+    console.error('❌ Delete template group error:', error.response?.data || error.message);
+    throw error;
+  }
+};
+
+export const listTemplateGroups = async () => {
+  try {
+    console.log('📦 Listing template groups');
+    
+    const response = await axios.get(
+      `${WHATSAPP_API_URL}/${API_VERSION}/${WABA_ID}/template_groups`,
+      {
+        headers: {
+          'Authorization': `Bearer ${ACCESS_TOKEN}`
+        }
+      }
+    );
+    
+    console.log('✅ Template groups retrieved:', response.data.data?.length || 0);
+    return response.data.data || [];
+  } catch (error: any) {
+    console.error('❌ List template groups error:', error.response?.data || error.message);
+    throw error;
+  }
+};
+
+
+// ==================== Template Group Analytics ====================
+
+export const getTemplateGroupAnalytics = async (groupId: string, startDate?: string, endDate?: string) => {
+  try {
+    console.log('📊 Getting template group analytics:', groupId);
+    
+    // Build query parameters
+    const params: any = {
+      metric: 'sent,delivered,read,clicked',
+      granularity: 'daily'
+    };
+    
+    if (startDate) params.start = startDate;
+    if (endDate) params.end = endDate;
+    
+    const queryString = new URLSearchParams(params).toString();
+    
+    const response = await axios.get(
+      `${WHATSAPP_API_URL}/${API_VERSION}/${groupId}/insights?${queryString}`,
+      {
+        headers: {
+          'Authorization': `Bearer ${ACCESS_TOKEN}`
+        }
+      }
+    );
+    
+    console.log('✅ Template group analytics retrieved');
+    return response.data;
+  } catch (error: any) {
+    console.error('❌ Get template group analytics error:', error.response?.data || error.message);
+    throw error;
+  }
+};
+
+export const getTemplateAnalytics = async (templateId: string, startDate?: string, endDate?: string) => {
+  try {
+    console.log('📊 Getting template analytics:', templateId);
+    
+    const params: any = {
+      metric: 'sent,delivered,read,clicked',
+      granularity: 'daily'
+    };
+    
+    if (startDate) params.start = startDate;
+    if (endDate) params.end = endDate;
+    
+    const queryString = new URLSearchParams(params).toString();
+    
+    const response = await axios.get(
+      `${WHATSAPP_API_URL}/${API_VERSION}/${templateId}/insights?${queryString}`,
+      {
+        headers: {
+          'Authorization': `Bearer ${ACCESS_TOKEN}`
+        }
+      }
+    );
+    
+    console.log('✅ Template analytics retrieved');
+    return response.data;
+  } catch (error: any) {
+    console.error('❌ Get template analytics error:', error.response?.data || error.message);
+    throw error;
+  }
+};
+
+// ==================== Template Quality Monitoring ====================
+
+export const getTemplateQuality = async (templateId: string) => {
+  try {
+    console.log('🔍 Getting template quality:', templateId);
+    
+    const response = await axios.get(
+      `${WHATSAPP_API_URL}/${API_VERSION}/${templateId}?fields=quality_score`,
+      {
+        headers: {
+          'Authorization': `Bearer ${ACCESS_TOKEN}`
+        }
+      }
+    );
+    
+    console.log('✅ Template quality retrieved');
+    return response.data;
+  } catch (error: any) {
+    console.error('❌ Get template quality error:', error.response?.data || error.message);
+    throw error;
+  }
+};
+
+export const getAllTemplatesQuality = async () => {
+  try {
+    console.log('🔍 Getting all templates quality');
+    
+    const response = await axios.get(
+      `${WHATSAPP_API_URL}/${API_VERSION}/${WABA_ID}/message_templates?fields=id,name,status,quality_score`,
+      {
+        headers: {
+          'Authorization': `Bearer ${ACCESS_TOKEN}`
+        }
+      }
+    );
+    
+    console.log('✅ All templates quality retrieved');
+    return response.data.data || [];
+  } catch (error: any) {
+    console.error('❌ Get all templates quality error:', error.response?.data || error.message);
+    throw error;
+  }
+};
+
+// Helper function to interpret quality score
+export const getQualityLevel = (qualityScore: any) => {
+  if (!qualityScore) {
+    return { level: 'unknown', color: 'gray', label: 'Unknown' };
+  }
+  
+  const score = qualityScore.score;
+  
+  if (score === 'HIGH') {
+    return { level: 'high', color: 'green', label: 'High Quality' };
+  } else if (score === 'MEDIUM') {
+    return { level: 'medium', color: 'yellow', label: 'Medium Quality' };
+  } else if (score === 'LOW') {
+    return { level: 'low', color: 'red', label: 'Low Quality' };
+  } else {
+    return { level: 'pending', color: 'gray', label: 'Quality Pending' };
+  }
+};
+
+// ==================== Template Group Insights ====================
+
+export const getTemplateGroupInsights = async (templateGroupId: string, startDate?: string, endDate?: string) => {
+  try {
+    console.log('📊 Getting template group insights:', templateGroupId);
+    
+    // Build query parameters
+    const params: any = {
+      fields: 'sent,delivered,read,clicked'
+    };
+    
+    if (startDate) params.start = startDate;
+    if (endDate) params.end = endDate;
+    
+    const response = await axios.get(
+      `${WHATSAPP_API_URL}/${API_VERSION}/${templateGroupId}/insights`,
+      {
+        headers: {
+          'Authorization': `Bearer ${ACCESS_TOKEN}`
+        },
+        params
+      }
+    );
+    
+    console.log('✅ Template group insights retrieved');
+    return response.data;
+  } catch (error: any) {
+    console.error('❌ Get template group insights error:', error.response?.data || error.message);
+    throw error;
+  }
+};
+
+// Helper function to calculate analytics metrics
+export const calculateAnalyticsMetrics = (insights: any) => {
+  const sent = insights.sent || 0;
+  const delivered = insights.delivered || 0;
+  const read = insights.read || 0;
+  const clicked = insights.clicked || 0;
+  
+  return {
+    sent,
+    delivered,
+    read,
+    clicked,
+    deliveryRate: sent > 0 ? ((delivered / sent) * 100).toFixed(2) : '0.00',
+    readRate: delivered > 0 ? ((read / delivered) * 100).toFixed(2) : '0.00',
+    clickRate: read > 0 ? ((clicked / read) * 100).toFixed(2) : '0.00',
+    engagement: sent > 0 ? (((read + clicked) / sent) * 100).toFixed(2) : '0.00'
+  };
+};
+
+
+// ==================== Template Pausing Detection ====================
+
+export const checkTemplatePausingStatus = async (templateId: string) => {
+  try {
+    console.log('🔍 Checking template pausing status:', templateId);
+    
+    const response = await axios.get(
+      `${WHATSAPP_API_URL}/${API_VERSION}/${templateId}?fields=id,name,status,quality_score,rejected_reason`,
+      {
+        headers: {
+          'Authorization': `Bearer ${ACCESS_TOKEN}`
+        }
+      }
+    );
+    
+    const template = response.data;
+    const isPaused = template.status === 'PAUSED' || template.status === 'DISABLED';
+    
+    console.log('✅ Template pausing status checked');
+    return {
+      ...template,
+      isPaused,
+      pauseInfo: isPaused ? getPauseInfo(template) : null
+    };
+  } catch (error: any) {
+    console.error('❌ Check template pausing error:', error.response?.data || error.message);
+    throw error;
+  }
+};
+
+export const getAllTemplatesPausingStatus = async () => {
+  try {
+    console.log('🔍 Checking all templates pausing status');
+    
+    const response = await axios.get(
+      `${WHATSAPP_API_URL}/${API_VERSION}/${WABA_ID}/message_templates?fields=id,name,status,quality_score,rejected_reason`,
+      {
+        headers: {
+          'Authorization': `Bearer ${ACCESS_TOKEN}`
+        }
+      }
+    );
+    
+    const templates = response.data.data || [];
+    const pausedTemplates = templates.filter((t: any) => 
+      t.status === 'PAUSED' || t.status === 'DISABLED'
+    );
+    
+    console.log(`✅ Found ${pausedTemplates.length} paused template(s)`);
+    return {
+      all: templates,
+      paused: pausedTemplates.map((t: any) => ({
+        ...t,
+        isPaused: true,
+        pauseInfo: getPauseInfo(t)
+      })),
+      pausedCount: pausedTemplates.length
+    };
+  } catch (error: any) {
+    console.error('❌ Check all templates pausing error:', error.response?.data || error.message);
+    throw error;
+  }
+};
+
+// Helper function to get pause information
+function getPauseInfo(template: any) {
+  const info: any = {
+    status: template.status,
+    reason: 'Unknown',
+    severity: 'warning',
+    suggestions: []
+  };
+  
+  // Determine pause reason based on available data
+  if (template.quality_score?.score === 'LOW') {
+    info.reason = 'Low Quality Score';
+    info.severity = 'error';
+    info.suggestions = [
+      'Review and improve template content',
+      'Ensure messages are relevant to recipients',
+      'Avoid spammy or promotional language',
+      'Test with a small audience first'
+    ];
+  } else if (template.rejected_reason) {
+    info.reason = template.rejected_reason;
+    info.severity = 'error';
+    info.suggestions = [
+      'Review WhatsApp Business Policy',
+      'Modify template to comply with guidelines',
+      'Contact WhatsApp support if needed'
+    ];
+  } else if (template.status === 'DISABLED') {
+    info.reason = 'Template Disabled';
+    info.severity = 'error';
+    info.suggestions = [
+      'Check for policy violations',
+      'Review template content',
+      'Contact WhatsApp support for details'
+    ];
+  } else if (template.status === 'PAUSED') {
+    info.reason = 'Template Paused';
+    info.severity = 'warning';
+    info.suggestions = [
+      'Check quality score',
+      'Review recent feedback',
+      'Wait for automatic resume or contact support'
+    ];
+  }
+  
+  return info;
+}
+
+// Helper function to get pause reason category
+export const getPauseReasonCategory = (template: any) => {
+  if (!template.isPaused) {
+    return null;
+  }
+  
+  const pauseInfo = template.pauseInfo || getPauseInfo(template);
+  
+  return {
+    category: pauseInfo.reason,
+    severity: pauseInfo.severity,
+    icon: pauseInfo.severity === 'error' ? 'XCircle' : 'AlertTriangle',
+    color: pauseInfo.severity === 'error' ? 'red' : 'yellow'
+  };
+};
+
+// Tier and Marketing Limits
+export const getMessagingLimitTier = async () => {
+  try {
+    const response = await axios.get(
+      `${WHATSAPP_API_URL}/${API_VERSION}/${PHONE_NUMBER_ID}`,
+      {
+        headers: {
+          'Authorization': `Bearer ${ACCESS_TOKEN}`
+        },
+        params: {
+          fields: 'quality_rating,messaging_limit_tier,display_phone_number,verified_name'
+        }
+      }
+    );
+
+    const data = response.data;
+    const tier = data.messaging_limit_tier || 'TIER_1';
+    
+    return {
+      tier,
+      quality_rating: data.quality_rating || 'UNKNOWN',
+      daily_limit: getTierDailyLimit(tier),
+      phone_number: data.display_phone_number,
+      business_name: data.verified_name,
+      account_id: data.id
+    };
+  } catch (error: any) {
+    console.error('Error fetching tier status:', error.response?.data || error.message);
+    throw error;
+  }
+};
+
+// Helper function to get daily limit for a tier
+function getTierDailyLimit(tier: string): number {
+  const limits: Record<string, number> = {
+    'TIER_1': 1000,
+    'TIER_2': 10000,
+    'TIER_3': 100000,
+    'TIER_4': Infinity
+  };
+  return limits[tier] || 1000;
+}
+
+// Get tier upgrade path
+export const getTierUpgradePath = (currentTier: string) => {
+  const paths: Record<string, any> = {
+    'TIER_1': {
+      current: 'Tier 1',
+      currentLimit: 1000,
+      next: 'Tier 2',
+      nextLimit: 10000,
+      requirements: [
+        'Maintain high quality rating',
+        'Keep block/report rate low',
+        'Consistent sending patterns'
+      ]
+    },
+    'TIER_2': {
+      current: 'Tier 2',
+      currentLimit: 10000,
+      next: 'Tier 3',
+      nextLimit: 100000,
+      requirements: [
+        'Excellent quality rating',
+        'Very low block/report rate',
+        'High engagement rates'
+      ]
+    },
+    'TIER_3': {
+      current: 'Tier 3',
+      currentLimit: 100000,
+      next: 'Tier 4',
+      nextLimit: Infinity,
+      requirements: [
+        'Outstanding quality rating',
+        'Minimal block/report rate',
+        'Proven track record'
+      ]
+    },
+    'TIER_4': {
+      current: 'Tier 4',
+      currentLimit: Infinity,
+      next: null,
+      nextLimit: null,
+      requirements: ['You are at the highest tier!']
+    }
+  };
+  
+  return paths[currentTier] || paths['TIER_1'];
+};
+
+// Get quality recommendations based on rating
+export const getQualityRecommendations = (qualityRating: string) => {
+  const recommendations: Record<string, any> = {
+    'GREEN': {
+      status: 'Excellent',
+      color: 'green',
+      icon: 'CheckCircle',
+      suggestions: [
+        'Great job! Keep maintaining high quality',
+        'Continue following best practices',
+        'Monitor engagement rates regularly'
+      ]
+    },
+    'YELLOW': {
+      status: 'Needs Improvement',
+      color: 'yellow',
+      icon: 'AlertTriangle',
+      suggestions: [
+        'Review template content for quality',
+        'Reduce sending frequency if needed',
+        'Improve audience targeting',
+        'Monitor block/report rates'
+      ]
+    },
+    'RED': {
+      status: 'Critical',
+      color: 'red',
+      icon: 'XCircle',
+      suggestions: [
+        'URGENT: Stop sending marketing messages temporarily',
+        'Review all templates for policy compliance',
+        'Check for high block/report rates',
+        'Contact WhatsApp support immediately'
+      ]
+    },
+    'UNKNOWN': {
+      status: 'Pending',
+      color: 'gray',
+      icon: 'HelpCircle',
+      suggestions: [
+        'Quality rating is being evaluated',
+        'Continue sending messages normally',
+        'Rating will be available soon'
+      ]
+    }
+  };
+  
+  return recommendations[qualityRating] || recommendations['UNKNOWN'];
+};

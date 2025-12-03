@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react';
-import { Plus, Trash2, Edit, Eye } from 'lucide-react';
+import { Plus, Trash2, Edit, Eye, RefreshCw } from 'lucide-react';
 import { templateService } from '../services/api';
+import PausedBadge from '../components/PausedBadge';
 
 const Templates = () => {
   const [templates, setTemplates] = useState([]);
   const [showModal, setShowModal] = useState(false);
+  const [syncing, setSyncing] = useState(false);
   const [newTemplate, setNewTemplate] = useState({
     name: '',
     language: 'en',
@@ -133,6 +135,28 @@ const Templates = () => {
     }
   };
 
+  const handleSyncTemplates = async () => {
+    const isDemoMode = localStorage.getItem('demo_mode') === 'true';
+    
+    if (isDemoMode) {
+      alert('✅ Demo Mode: Templates synced!\n\nIn production, this would fetch the latest status from WhatsApp API.');
+      return;
+    }
+
+    setSyncing(true);
+    try {
+      // Fetch templates with sync=true to update statuses from WhatsApp API
+      const data = await templateService.getTemplates(true);
+      setTemplates(data.templates);
+      alert('✅ Templates synced successfully!\n\nAll template statuses have been updated from WhatsApp.');
+    } catch (error) {
+      console.error('Sync error:', error);
+      alert('❌ Failed to sync templates');
+    } finally {
+      setSyncing(false);
+    }
+  };
+
   const handleDeleteTemplate = async (templateId: string) => {
     const isDemoMode = localStorage.getItem('demo_mode') === 'true';
     
@@ -142,14 +166,21 @@ const Templates = () => {
         alert('✅ Demo Mode: Template deleted!');
       }
     } else {
-      if (confirm('Are you sure you want to delete this template?')) {
+      const template = templates.find((t: any) => t.id === templateId);
+      const templateName = template?.name || 'this template';
+      
+      if (confirm(`Are you sure you want to delete "${templateName}"?\n\nThis will delete it from both your platform and WhatsApp/Meta.`)) {
         try {
           await templateService.deleteTemplate(templateId);
-          setTemplates(templates.filter((t: any) => t.id !== templateId));
-          alert('✅ Template deleted successfully!');
-        } catch (error) {
+          
+          // Reload templates from backend to ensure sync
+          loadTemplates();
+          
+          alert(`✅ Template "${templateName}" deleted successfully!\n\nDeleted from:\n• Your platform database\n• WhatsApp/Meta account`);
+        } catch (error: any) {
           console.error('Delete template error:', error);
-          alert('❌ Failed to delete template');
+          const errorMsg = error.response?.data?.error || error.message || 'Unknown error';
+          alert(`❌ Failed to delete template\n\nError: ${errorMsg}`);
         }
       }
     }
@@ -159,13 +190,23 @@ const Templates = () => {
     <div className="p-8">
       <div className="flex justify-between items-center mb-8">
         <h1 className="text-3xl font-bold text-gray-800">Message Templates</h1>
-        <button
-          onClick={() => setShowModal(true)}
-          className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
-        >
-          <Plus className="w-5 h-5" />
-          Create Template
-        </button>
+        <div className="flex gap-3">
+          <button
+            onClick={handleSyncTemplates}
+            disabled={syncing}
+            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <RefreshCw className={`w-5 h-5 ${syncing ? 'animate-spin' : ''}`} />
+            {syncing ? 'Syncing...' : 'Sync Status'}
+          </button>
+          <button
+            onClick={() => setShowModal(true)}
+            className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
+          >
+            <Plus className="w-5 h-5" />
+            Create Template
+          </button>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -179,11 +220,24 @@ const Templates = () => {
                   <h3 className="text-lg font-semibold">{template.name}</h3>
                   <span className="text-sm text-gray-500">{template.language}</span>
                 </div>
-                <span className={`px-2 py-1 text-xs rounded ${
-                  template.status === 'APPROVED' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
-                }`}>
-                  {template.status}
-                </span>
+                <div className="flex flex-col gap-1 items-end">
+                  <span className={`px-2 py-1 text-xs rounded ${
+                    template.status === 'APPROVED' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
+                  }`}>
+                    {template.status}
+                  </span>
+                  {template.quality_score && (
+                    <span className={`px-2 py-1 text-xs rounded ${
+                      template.quality_score.score === 'HIGH' ? 'bg-green-100 text-green-800' :
+                      template.quality_score.score === 'MEDIUM' ? 'bg-yellow-100 text-yellow-800' :
+                      template.quality_score.score === 'LOW' ? 'bg-red-100 text-red-800' :
+                      'bg-gray-100 text-gray-800'
+                    }`}>
+                      {template.quality_score.score}
+                    </span>
+                  )}
+                  {template.paused_info && <PausedBadge pauseInfo={template.paused_info} size="sm" />}
+                </div>
               </div>
               <p className="text-gray-600 text-sm mb-2">{template.category}</p>
               

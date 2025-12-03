@@ -177,14 +177,44 @@ export const messageService = {
 };
 
 export const templateService = {
-  getTemplates: () => 
-    api.get('/templates').then(res => res.data),
+  getTemplates: (sync?: boolean) => 
+    api.get('/templates', { params: { sync: sync ? 'true' : 'false' } }).then(res => res.data),
   createTemplate: (template: any) => 
     api.post('/templates', template).then(res => res.data),
   updateTemplate: (id: string, template: any) => 
     api.put(`/templates/${id}`, template).then(res => res.data),
   deleteTemplate: (id: string) => 
-    api.delete(`/templates/${id}`).then(res => res.data)
+    api.delete(`/templates/${id}`).then(res => res.data),
+  sendTemplate: (to: string, templateName: string, languageCode: string, components?: any[]) =>
+    api.post('/templates/send', { to, templateName, languageCode, components }).then(res => res.data),
+  
+  // Template Groups
+  listGroups: () =>
+    api.get('/templates/groups').then(res => res.data),
+  createGroup: (name: string, description: string, templateIds: number[]) =>
+    api.post('/templates/groups', { name, description, templateIds }).then(res => res.data),
+  getGroup: (groupId: string) =>
+    api.get(`/templates/groups/${groupId}`).then(res => res.data),
+  updateGroup: (groupId: string, updates: any) =>
+    api.put(`/templates/groups/${groupId}`, updates).then(res => res.data),
+  deleteGroup: (groupId: string) =>
+    api.delete(`/templates/groups/${groupId}`).then(res => res.data),
+  
+  // Analytics
+  getGroupAnalytics: (groupId: string, startDate?: string, endDate?: string) =>
+    api.get(`/templates/groups/${groupId}/analytics`, { params: { startDate, endDate } }).then(res => res.data),
+  getTemplateAnalytics: (templateId: string, startDate?: string, endDate?: string) =>
+    api.get(`/templates/${templateId}/analytics`, { params: { startDate, endDate } }).then(res => res.data),
+  
+  // Pausing
+  getAllTemplatesPausingStatus: () =>
+    api.get('/templates/pausing/all').then(res => res.data),
+  checkTemplatePausingStatus: (templateId: string) =>
+    api.get(`/templates/${templateId}/pausing`).then(res => res.data),
+  
+  // Marketing Limits & Tier
+  getMessagingLimitTier: () =>
+    api.get('/templates/tier/status').then(res => res.data)
 };
 
 export const dashboardService = {
