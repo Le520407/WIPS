@@ -73,8 +73,20 @@ export interface WebhookChange {
     };
     messages?: WhatsAppMessage[];
     statuses?: MessageStatus[];
+    calls?: WhatsAppCall[];
   };
   field: string;
+}
+
+export interface WhatsAppCall {
+  id: string;
+  from: string;
+  to?: string;
+  status: 'ringing' | 'connected' | 'ended' | 'missed' | 'rejected' | 'failed';
+  timestamp: string;
+  start_time?: string;
+  end_time?: string;
+  context?: string;
 }
 
 export interface WhatsAppMessage {
@@ -109,6 +121,11 @@ export interface WhatsAppMessage {
     name: { formatted_name: string; first_name?: string };
     phones?: Array<{ phone: string; type?: string }>;
   }>;
+  sticker?: {
+    id: string;
+    mime_type: string;
+    animated?: boolean;
+  };
   reaction?: {
     message_id: string;
     emoji: string;

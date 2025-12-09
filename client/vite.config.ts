@@ -11,5 +11,22 @@ export default defineConfig({
         changeOrigin: true
       }
     }
+  },
+  define: {
+    'global': 'globalThis',
+    'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV || 'development'),
+  },
+  resolve: {
+    alias: {
+      events: 'events',
+      util: 'util',
+    }
+  },
+  optimizeDeps: {
+    esbuildOptions: {
+      define: {
+        global: 'globalThis'
+      }
+    }
   }
 });

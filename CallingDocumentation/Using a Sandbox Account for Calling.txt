@@ -1,0 +1,168 @@
+Using a Sandbox Account for Calling
+Sandbox accounts are only available to Tech Partners.
+
+Overview
+WhatsApp sandbox accounts provide Solution Partners with a mock WhatsApp Business Account to test integration. Sandbox accounts can be used for a variety of testing, but can also be used to test your calling integration. Use a calling sandbox account to
+
+Initiate and receive calls using the Calling API
+Validate calling webhook events
+Simulate onboarding flows without creating real business assets
+Differences in calling limits when using a sandbox account
+Limit	Description	Production number limit	Public test number limit
+Connected call limit
+
+Number of calls a business is allowed to make on approved permissions.
+
+10 connected calls per 24 hrs
+
+100 calls per day
+
+Call Permission Request message limits
+
+Limits the number of call permission request messages that can be sent to the same consumer
+
+1 request per day
+
+
+2 requests per week
+
+25 requests per day
+
+
+100 requests per week
+
+Unanswered call limits
+
+When a business initiated call goes unanswered (In essence, is rejected by the user or missed by the user).
+
+Nudge on 2 consecutive unanswered calls
+
+
+Revoke permission on 4 consecutive unanswered calls
+
+Nudge on 5 consecutive unanswered calls
+
+
+Revoke on 10 consecutive unanswered calls
+
+Temporary call duration
+
+Duration until when a business can call the user after permission is approved.
+
+7 days
+
+No change
+
+How to setup your calling sandbox account
+Step 1. Access the WhatsApp Developer Sandbox
+Navigate to the App Dashboard.
+Click the app you are using with WhatsApp.
+Select Use cases (pencil icon) from the sidebar.
+Under Connect with customers through WhatsApp, click Customize.
+In the left menu, select Partner tools.
+In the Claim a sandbox account section, under Features, click the dropdown. Select Cloud API and Calling.
+Click Claim sandbox account.
+Under Enable calling functionality click the dropdown, then click Manage phone number list.
+Add your phone number as a recipient.
+Step 2. Obtain credentials and identifiers for your sandbox account
+On the same page, under Customize a new onboarding flow, click Get started to open the Embedded Signup experience.
+Note: Keep this tab open and available as you will use it multiple times throughout this process.
+In the Embedded Signup Launch section, ensure that the Features dropdown is empty, then click Login with Facebook.
+A popup with the embedded signup experience will show. Under Business portfolio select Sandbox Business.
+Fill in the rest of the required information, then click Next.
+On the next screen, in the Create or Select a WhatsApp Business Profile dropdown, select Test Number.
+Once the login flow is complete, in the Exchange Token section, click Get Token.
+Note: Retain this token for future sandbox account API use.
+In the Fetch Shared WhatsApp Business Account section, click Fetch WABA details.
+Under WhatsApp business account field, copy the Value for the id row.
+Note: Retain this ID since it is the WhatsApp Business Account ID for the sandbox WABA.
+In the Fetch phone numbers section, click Fetch phone numbers.
+Under ID, copy the value.
+Note: Retain this ID since it is the phone number ID for your sandbox account test phone number.
+Step 3. Register your test phone number and subscribe to your WABA
+Prerequisites
+
+Ensure that you have the following information from the previous steps: * Your sandbox account token string * Your sandbox account WABA ID * Your test phone number ID
+
+To complete these next steps, you will use the Graph API Explorer tool.
+
+Note: Keep this window open as you will use the configuration you created again in later steps in this guide.
+Navigate to the Graph API Explorer tool.
+Ensure you are on the latest version of the API.
+Click Generate Access Token and follow the prompts.
+Under Permissions, add the whatsapp_business_management and whatsapp_business_messaging permissions
+In the endpoint builder, enter /<YOUR_SANDBOX_WABA_ID>/subscribed_apps, then click Submit.
+{
+  "success": true
+}
+Next, register your test phone number by entering /<YOUR_SANDBOX_TEST_PHONE_NUMBER_ID>/register in the endpoint builder.
+In the left sidebar, click JSON, then enter the following JSON body, then click Submit:
+{
+  "messaging_product": "whatsapp",
+  "pin": "123456"
+}
+You should receive a standard success response:
+{
+  "success": true
+}
+Step 4. Test your messaging functionality
+In the Graph API Explorer tool, enter /<YOUR_SANDBOX_TEST_PHONE_NUMBER_ID>/messages in the endpoint builder.
+In the left sidebar, click JSON, then enter the following JSON body, then click Submit:
+{
+  "messaging_product": "whatsapp",
+  "to": "YOUR_NUMBER", // Replace this value with phone number of your device.
+  "type": "template",
+  "template": {
+    "name": "hello_world",
+    "language": { "code": "en_US" }
+  }
+}
+You will receive a response with a "message_status": "accepted" value, and you should receive a text message on your device.
+Step 5. Configure Webhooks and Permissions
+Navigate to the App Dashboard.
+Click the app you are using with WhatsApp.
+Select Use cases (pencil icon) from the sidebar.
+Under Connect with customers through WhatsApp, click Customize.
+In the left sidebar, click Configuration.
+Under Callback URL, add the callback URL for your webhook server.
+If you do not have a webhook server, you can follow our instructions to create a test webhook server.
+Under Verify token, add an arbitrary verification string.
+Click Verify and save.
+On the next page, in the Select product dropdown, click WhatsApp Business Account.
+Under Webhook fields, in the calls row, click the toggle button to subscribe to the calls webhook field.
+Finish: Enable calling features on your test phone number
+In the Graph API Explorer tool, enter /<YOUR_SANDBOX_TEST_PHONE_NUMBER_ID>/settings in the endpoint builder.
+In the left sidebar, click JSON, then enter the following JSON body, then click Submit:
+{
+  "calling": {
+    "status": "ENABLED",
+    "call_icon_visibility": "DEFAULT",
+    "callback_permission_status": "ENABLED"
+  }
+}
+You should receive a standard success response:
+{
+  "success": true
+}
+Finally, under Access Token, copy the access token down for future use.
+Note: Retain this access token as you will use it to make API calls for testing your Calling API integration.
+Test Business-initiated calling (BIC)
+Before you can test business-initiated calls, you must provide user calling permissions to your sandbox account.
+
+You can do this on client device you are using for testing by:
+
+On your client device, open WhatsApp.
+Navigate to the message thread you have with your sandbox business phone number.
+At the top of the screen, tap the sandbox business phone number.
+Scroll down and tap Business Calling Permission.
+Tap Allow calls.
+You can now use your Calling API integration to call the client device and test your integration.
+
+Learn more about how to make business-initiated calls.
+
+Test User Initiated Calling (UIC)
+On your client device, open WhatsApp.
+Navigate to the message thread you have with your sandbox business phone number.
+Tap the phone icon in the upper right corner of the screen to call the sandbox business phone number.
+Confirm a successful call connection.
+Learn more about how to handle user-initiated calls.

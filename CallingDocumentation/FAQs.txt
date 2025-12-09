@@ -1,0 +1,464 @@
+FAQs
+Product FAQ
+Will calls show up in the insights page on Meta WhatsApp Manager UI?
+
+Call insights will be available in both WhatsApp Manager and the analytics API.
+
+Are International calls supported like WhatsApp consumer to consumer calls?
+
+Yes
+
+What are the countries supported for calling?
+User-initiated Calling (UIC) is available in every location Cloud API is available
+Business-initiated Calling (BIC) is currently available in every location Cloud API is available, except the following countries:
+USA
+Canada
+Turkey
+Egypt
+Vietnam
+Nigeria
+Note: The business phone number’s country code must be in this supported list. The consumer phone number can be from any country where Cloud API is available.
+
+Can I use toll-free numbers for calling?
+
+Yes, as long as the country code for the toll-free number is in the list of supported countries. See 1-800 and toll free numbers for details on how to register toll-free numbers on Cloud API.
+
+What is the max number of concurrent calls that a single Cloud API account phone number can receive?
+
+Max concurrent calls is 1000. When the rate limit exceeds, the caller (viz. WhatsApp user) will get a generic message saying call cannot be placed. No message is played and there is no webhook. We anticipate to increase this limit and hence chances of this happening are low. Note that the rate limits for messaging API and template creation/update API are separate and unrelated to calling limits.
+
+What is the role of BSP vs. end business in overall call flow?
+
+The BSP offers value-added services (e.g. contact center, voice recording, transcription, etc.) on top of the raw audio stream provided by Cloud API Calling.
+The webhook is sent to apps subscribed for the new calls subscription field. In typical cases, a BSP uses their own app and receives the call webhook followed by call establishment.
+How the end-business (i.e., your customer) participates in the call is up to you as a BSP.
+Is the voice infrastructure/API for WhatsApp the same for Facebook Messenger?
+
+WhatsApp Calling API is the first public voice API by Meta. Meta may reuse the same API and integration model for other Meta products when and if they offer voice solutions.
+
+What is the maximum call duration supported?
+
+There is no call duration limit
+
+Is SIP supported?
+
+Yes, see "Configure and use call signalling via session initiation protocol (SIP)"
+
+Can I send/receive text/media messages while a call is in progress?
+
+Yes. The regular send-message API can be used while a call is in progress.
+
+Does Meta offer services such as voice recording, transcript, voice-mail?
+
+No. However these are provided by many of our partners
+
+Can we add metadata (e.g. context) as part of accepting the call?
+
+Yes. See biz_opaque_callback_data field in the main API spec. Also the conversation state you already have provides important context to the business human agent. We expect your call routing subsystem to directly connect the call from WhatsApp consumer to the right agent on the business side. This gives the best customer experience and avoid going through standard IVR
+
+How can we raise awareness of the calling feature to WhatsApp users?
+
+You can send them messages with voice call buttons. See send interactive message and send template message sections for details
+You can also message with a voice call button automatically when a WhatsApp consumer opens a chat with your business account for the first time. See welcome message for more details.
+You can link to a whatsapp call from your website using deeplinks.
+Is it possible for an AI (e.g. voicebot) to have a conversation with a customer directly via a WhatsApp call?
+
+Yes. Meta only provides the raw media stream and how you process it is totally up to you. We have many partners using automated voicebots including AI bots to answer calls from WhatsApp users. Many AI products in the market offer RTC / Speech APIs and some even have native WebRTC support. The way you integrate is similar to how you’d integrate WhatsApp Business Calling with call centers for IVR or human agents.
+
+Why is pre-accepting user initiated call starting the timer on WhatsApp user side?
+
+Likely because you're sending media before you accept the call. WhatsApp clients treat a call as accepted by peer if they receive a media packet or an accept signal whichever comes first.
+
+If you cannot control the timing of media start, you should directly accept the call and not use pre-accept. The pre-accept is meant to frontload media connection establishment but it does require controlling the timing of media transmission.
+
+Getting Started FAQ
+What is the minimum Graph API version for the Calling APIs?
+
+It is v17.0. See here for general version history
+
+Can we use the same user access token for messaging, for calling?
+
+Yes. Whatever works for messaging should work for calling in general.
+
+Does the WABA need to have an attached credit line for using Calling APIs?
+
+Yes, you need a credit line attached to your WABA in order to use the Calling API.
+
+Does the WABA need to be a verified business for calling?
+
+No. Business verification is not a requirement for calling, nor is it required for messaging
+
+How does usage of Calling APIs affect my rate limits?
+
+Calling API usage does not count towards messaging rate limits at the moment. The only limit enforced for calling right now is the 1000 concurrent calls limit, but this may change in near future.
+
+Is it possible for a WhatsApp Business account be connected to Provider A for Chat and to Provider B for Voice (i.e., two different apps subscribed to the same WhatsApp business Webhook account/phone)?
+
+Yes, it is possible for 2 partners to operate a single WhatsApp Business API phone number with two separate solutions, like chat and calling.
+
+See Multi-Solution Conversations for more details.
+
+Another option is for the voice provider used by another BSP. In this case you don’t need a Meta app or be a tech provider on Meta. This architecture is depicted in detail in the section "Integrating using a third party voice provider".
+
+Graph API Call Signaling FAQ
+Does Meta provide any stun/turn servers or WebRTC infra for use by BSP?
+
+No.
+
+Meta uses ICE-lite and our SDP offer always has a single ipv4 and ipv6 address per data stream component. We recommend your SDP answer follow the same
+
+As such it is not mandatory for you to use STUN/TURN to determine the ICE candidates
+
+Does Meta recommend any stun/turn servers or WebRTC infra for use by BSP?
+
+Meta doesn’t have recommendations. Here are a few ideas just as food for thought in case they are helpful.
+
+Check if you already have any VoIP related technology and if so, consult that team. WebRTC relies on SRTP/SRTCP for actual media which is the VoIP media standard.
+Using STUN/TURN works well in an end user setup with a browser from a personal device. If your integration with our voice apis involves terminating the media directly on an end user device, the STUN/TURN etc happen directly on that user device. But often, the media does terminate in a partner’s own infra so services like IVR can be offered. In such cases, your infra may have its own ways to allocate an IP and port for VoIP connections, for example using VIP behind a load-balancer etc.
+What ICE role should the ICE agent on the business side take?
+
+You should always take the CONTROLLING role as the Meta side ICE agent uses ICE-lite (RFC 8445). If you start with the CONTROLLED role, the ICE process may stall and timeout. Even if it does work, it will take more time due to multiple round-trips needed to resolve role conflicts.
+
+Can more ICE candidates be added as part of signaling in offer + answer (e.g. using ICE Trickle)?
+
+Short answer is yes. Cloud API uses ICE-lite (RFC 8445) and always assumes the controlled role in ICE. Hence there is no need for you to send updated candidates to Meta. Your ICE Agent can initiate connectivity checks from addresses not included in your SDP and our ICE agent will consider unknown address as a valid candidate, as long as STUN message integrity passes.
+
+What is your recommendation on how to determine the ICE candidate?
+
+Meta has global infra presence and meta will choose the media relay on Meta infra that is closest to the WhatsApp user involved in the call.
+
+On your side you can choose the media server/host (aka targeting) based on many parameters including the IP we choose, the country of consumer phone number, and the business phone number. The selection of media server location is an important factor in optimizing the media latency between BSP IP and Meta IP which in turn contributes to higher call quality. At the minimum, we recommend BSP call/media hosting location to be close to the country of WhatsApp user as determined from the country code of the user’s phone number.
+
+Any targeting implementation on your side should optimize for the candidates IPs on the meta SDPs and not on the source of signaling endpoints.
+
+Is there an API to send a provisional response equivalent to SIP 180 Ringing? If not, when does the caller's device start ringing?
+
+Caller (viz. WhatsApp Consumer app) would already be ringing by the time you receive the webhook. There is no need for provisional responses
+
+How are the calls secured?
+
+Cloud API uses SRTP for the encryption of media streams (RTP/SAVPF) and the actual SRTP key exchange is initially performed end-to-end with DTLS-SRTP.
+
+Can Meta send the call webhooks to a different endpoint based on the caller’s geographical location or other factors such as network latency?
+
+The webhook url is supplied by you and we use HTTPs, so you can use standard load balancing and targeting techniques on your side to reroute accordingly. You can also configure a different (aka override or alternate) webhook URL per WhatsApp Business Account and per business phone number. The webhook is only used for signaling and Meta servers calling your webhook server are located in US. We recommend you select the location of your media endpoint based on the country code of the WhatsApp consumer (available on our webhooks) or the ice candidate IPs on SDP sent by Meta. See the above FAQ questions "What is your recommendation on how to determine the ICE candidate?" and "How to reduce media latency of the calls?" .
+
+What are the Meta IP addresses that will call our Webhook or SIP or Media servers in order for us to allowlist them in our firewall?
+
+Refer to our public documentation on this topic. When you collapse the list of IPv4 addresses you’ll get around 23 prefixes. See below for an example command and output that was run as of Dec 11, 2024
+
+$ src % whois -h whois.radb.net — '-i origin AS32934' | grep ^route | awk '{print $2}' | grep -iv ':' | cidrmerge               
+31.13.24.0/21
+31.13.64.0/18
+45.64.40.0/22
+57.141.0.0/21
+57.141.8.0/22
+57.141.12.0/23
+57.144.0.0/14
+66.220.144.0/20
+69.63.176.0/20
+69.171.224.0/19
+74.119.76.0/22
+102.132.96.0/20
+103.4.96.0/22
+129.134.0.0/16
+147.75.208.0/20
+157.240.0.0/16
+163.70.128.0/17
+163.77.128.0/17
+173.252.64.0/18
+179.60.192.0/22
+185.60.216.0/22
+185.89.216.0/22
+204.15.20.0/22
+Is it possible to reduce the Meta IP addresses that will call our webhook servers at-least for dev-test purposes?
+
+No. But see the above FAQ which deduced about 23 IPv4 prefixes to completely cover all our address space for v4.
+
+What is the retry policy for calling related webhooks?
+
+We suggest you to not assume anything in this regard. Your webhook server should determine stale webhooks based on timestamp value and avoid calling Graph APIs to further process them. Existing messaging related webhooks are retried for up to 7 days.
+
+Calling related webhooks will likely have a shorter retry policy but we may still deliver stale webhooks to you as that may be useful information to business to know that some consumers tried to reach them.
+
+Do you guarantee exactly once delivery for webhooks?
+
+No, you should be prepared to handle duplicate webhooks.
+
+Due to the distributed nature of our architecture we cannot guarantee exactly once delivery for any webhooks including even messaging related webhooks. Following are some known scenarios where duplicates can occur today.
+
+Our https request to your webhook server timed out after ~20s. In this case your server thinks it successfully handled a webhook request but from our side it failed due to timeout. We retry sending this webhook which then appears to you as a duplicate.
+Your phone number has more than 1 app subscribed to the calls field and we dispatch webhooks to say app1, app2 in that order. If app2 fails, we’ll retry the whole dispatch so app1 will receive a duplicate webhook. We’re in the process of fixing this on our side.
+Failure recovery on Meta queueing infrastructure may result in duplicate webhook sends.
+There could be other reasons we are unaware of.
+Do you guarantee ordering of webhooks for a given call?
+
+No, we don’t due to the distributed nature of our architecture and retries.
+
+For example you can get the terminate webhook before the connect webhook if the WA user hangs up the call immediately after initiating it. Following are other known examples.
+
+We attempt the connect webhook which fails with timeout after ~20s. The ‘terminate webhook’ is sent next. The retry of connect webhook happens after the ‘terminate webhook’. In case of timeout, your webhook server thinks there is no failure but we see this as failure that warrants a retry.
+
+Can I configure multiple webhook servers for calling and have a notion of primary and secondary for high availability?
+
+Similar to messaging, you can configure multiple subscriptions with distinct apps associated with distinct callback URLs. Meta will dispatch all calling webhooks to all configured callback URLs. But we treat all URLs as equal and don’t have a notion of primary/secondary
+
+Can I configure different URLs for messaging and calling related webhooks?
+
+Yes you can do this by having 2 different Meta apps - one for messaging and one for calling.
+
+Subscribe the messaging app only to message related webhook subscription fields and the calling app to the calling related subscription fields. You can override the callback URL for each of these apps at WABA or phone number level to have different URL override for messages and calls.
+
+However you can also have a single app and subscribe to both messages and calls Webhook subscription fields. In this setup, the callback URI is same for both messages and calls related webhooks but the webhook payload can be used to distinguish between the two categories of webhooks.
+
+In general, we recommend using a single app.
+
+Can you share sample curl request for interacting with APIs?
+
+Please view our Sample CURL request section in our API reference.
+
+How should the sdp params be serialized with carriage returns and a new line?
+
+The session param requires the sdp to be set as a string per the RFC-8866 specification which requires CRLF to be used to end a record. Sdp param itself is a string so it should not be further serialized. The legacy connection param however required the RFC-8866 compliant sdp string to be within a json structure and hence required further serialization.
+
+In short, use “\r\n” for session->sdp param. Do not use the legacy connection->webrtc->sdp param.
+
+How do I fix error 'No fingerprint found in SDP'?
+
+Your SDP should have a=fingerprint line when you're using DTLS as the SRTP key exchange protocol. Make sure to add that line or you can configure your business phone number to use SDES instead. See all the possible Signaling and media possible configurations.
+
+WebRTC / Media FAQ
+Is the peer to peer connection from Meta to BSP or end business?
+
+Typically it is the BSP but depending on your product offering, architecture it could be end business.
+
+If it is the end business, you as BSP would need to programmatically interact with them to obtain the ICE candidates included in your graph api call to accept the incoming call.
+
+What happens if the media stops flowing from one end due to connection issues?
+
+A simple example would be if the terminate call endpoint fails but the business side stops sending media.
+
+This will lead to lack of RTCP packets which helps detect inactive WebRTC agent and the call will disconnect followed by a terminate webhook.
+
+Is the codec always opus/48000?
+
+Yes. The RTP clock rate is set at 48000 in SDP as per RFC 7587. WhatsApp mobile apps only support opus natively.
+
+What else do we support in terms of codecs?
+
+At this time we only support Opus codec. WhatsApp mobile apps only support opus natively.
+
+Is DTMF supported?
+
+Yes. See the DTMF section for details. Most SIP implementations should support processing DTMF coming through the RTP data stream (reference).
+
+How many streams are supported in the SDP?
+
+You can only have one stream in the Offer/Answer SDP.
+
+How many tracks are supported in each SDP stream?
+
+You can only have one audio track in the SDP stream.
+
+For a consumer to business call, can WhatsApp consumer apps work with an SDP offer generated by a business agent’s browser?
+
+In this case, the WebRTC agent within the browser should generate an SDP answer, not an offer.
+
+This SDP answer should be supplied back to us using the accept call endpoint. Meta cannot work with any other SDP offer than the one it generated and supplied to you on the webhook.
+
+What certificate algorithm do you recommend for DTLS?
+
+We recommend ECDSA certificates as they lead to faster cert generation, shorter DTLS handshakes due to lack of fragmentation.
+
+Who would initiate the calls after accepting the user-initiated call - The BSP or Meta?
+
+The BSP should initiate the ICE connectivity checks as soon as the BSP decides to accept the call.
+
+This can be done even before calling our accept API but the ICE process will only converge after we process your SDP answer, due to the need for DTLS certificate fingerprint.
+
+What are the port numbers used by ICE candidates on Meta’s SDP so we can use those ports for allowlisting on our firewalls?
+
+Port numbers can be any one from 40012, 3482, 3484, 3478, 3480. These are subject to change.
+
+How can we generate the WebRTC Accept SDP?
+
+Consult the documentation of the webrtc library/tool you plan to use.
+
+Processing an SDP offer to generate an SDP answer is the primary functionality of any VoIP technology stack.
+
+How to reduce media latency of the calls?
+
+Meta's targeting algorithms will choose the meta relay that receives media from BSP close to the WhatsApp consumer's location. This media relay is the ice candidate meta will share in the SDP. Any BSP side targeting should place the BSP media servers in the same region as the consumer. This obviously minimizes latency for calls within the same region, but it will minimize the media packet routes on public internet for international calls.
+
+Is there a process of reconnection in case of broken connection / possible media loss?
+
+WhatsApp consumer apps will attempt a reconnect and automatically recover that leg of the call once network connectivity is restored.
+
+For the business leg, we expect relatively more stable network conditions and at this time we don’t have support to re-handshake or re-negotiate SDPs. In any case, the call can terminate after a certain duration of inactivity, after which you will get a terminate webhook.
+
+How much bandwidth would be required for the call center to support a given number of concurrent calls?
+
+Per call, you roughly need 40kbps for codec + 20 kbps overhead = 64 kbps. However codec bandwidth can vary in the range between 20-50 kbps.
+
+The Opus codec has the ability to dynamically change bandwidth consumed based on network conditions. In general it can offer better audio quality with lower bandwidth consumption, compared to G711 codec.
+
+G711 codec in comparison needs 64 kbps for codec + 20 kbps overhead = 84 kbps per call.
+
+You can multiply above numbers with the expected number of concurrent calls to calculate the cumulative bandwidth required. Ex: A 1mbps bandwidth can roughly handle 15 concurrent calls on opus (1000/64) vs. 12 concurrent calls on G711 (1000/84).
+
+To calculate the total data usage, multiply the bandwidth with call duration in seconds. For opus, it’s a bit more tricky because it has variable bandwidth depending on many factors including available bandwidth estimated using bandwidth estimation, whether local party is talking or silent etc. But roughly, a 1 min call on opus consumes 3.75MB of data vs. the same on G711 takes 4.9MB of data
+
+Is it possible to handover / transfer a call from one agent to another during an active call session? In essence, a customer is speaking with Agent A and needs to be transferred to Agent B?
+
+Meta doesn’t have any native support for this use case.
+
+Meta is unaware of different agents on the business / partner side, so this is an operation that is doable solely on the partner side. For example, the media flow can be Meta media server to Partner media server to Agent A. When transfer happens, the flow becomes Meta media server to Partner media server to Agent B. So in the both cases, the leg from Meta media server to Partner media server remains constant.
+
+WhatsApp Consumer Client FAQ
+When is the call icon in the chat title bar visible on WhatsApp Consumer apps?
+
+It is visible when all the following conditions are met:
+
+The business phone number has the calling status set to ENABLED in the call settings API.
+Business phone number call_icon_visibility is not HIDE_IN_CHAT and not DISABLE_ALL
+The call icon visibility feature is supported in WhatsApp mobile versions 2.24.10.8 and above on Android and iOS.
+Consumer’s WhatsApp version 2.23.14 or above. We expect all consumers to be on this version or above.
+View the call settings API to learn more
+
+Why is the call icon in the WhatsApp Consumer app not reflecting the current call settings?
+
+After call configuration is updated, WhatsApp users may take up to 7 days to reflect that configuration although most users refresh much sooner. You can force an immediate refresh in WhatsApp by entering the chat window with business and open the chat info page. Regardless of WhatsApp client behavior, the semantics of settings are still honored on the server side.
+
+You can troubleshoot the call icon not showing using the following steps:
+
+Navigate to the chat window for the business and click on the business name/number in the chat title bar. This will take you to the Business Info screen and forces the app to refresh calling state for the business.
+Navigate out of the chat window for the business and re-enter.
+If you still don't see expected state, kill the WhatsApp app and restart it.
+Make sure to get call settings to double confirm expected call settings.
+How long does it take for WhatsApp clients to reflect changes to calling configuration?
+
+It can take up to 7 days although most WA users should reflect the changes much sooner.
+
+One WA Business can have chats with any number of 3B+ WhatsApp users. Updates to calling settings sends change notifications to all users that have a chat with this business visible in their WhatsApp Inbox. However notification delivery is best effort so not all users may receive it.
+
+All WhatsApp clients refresh the business information (including calling configuration) every 7 days regardless of getting any change notifications.
+
+In either case (notification driven or 7d refresh), once the local state in WhatsApp client is refreshed, it is reflected in UI only on next enter of the chat screen or chat info screen.
+
+Must I create an allowlist of consumer numbers for calling to work?
+
+No.
+
+Can we limit calling access to specific or individual WA users instead of all WA users? Example: a lead that’s qualified or a customer who is in premium tier
+
+No, we do not have a way to control visibility or access of calling on an individual WhatsApp user basis. However you can use Call Settings API to set call_icon_visibility to DISABLE_ALL which will hide call icons to all WA users. For qualified WA users, you can send a message with the call CTA button so only they can call you by tapping on the button in the message
+
+Providing this type of feature would require Meta to store configuration per WhatsApp user which has higher privacy risk. It will also incur higher operational overhead for you to maintain large lists of allowlisted WA users on an ongoing basis.
+
+When the call icon is hidden using Call Settings API, is it still possible for consumers to call the business?
+
+Yes.
+
+A user can still call the business from other entry points which are unaffected by the Call Settings API such as:
+
+Save the business number as a contact and use new call
+Call logs from Calls tab > Recent
+Call CTA in messages sent from the business
+Call bubble in the chat window that appears following any call between user and business
+Hence the recommendation is to treat DISABLE_ALL only as a broad first level filter and ensure your webhooks do any additional filtering based on your own business logic.
+
+How will WhatsApp consumers type digits for DTMF?
+
+WhatsApp consumer apps are extended to support a new keypad for business calls.
+
+Learn more about DTMF support in Calling API
+
+What is the min version of WhatsApp mobile apps that support the voice call button?
+
+Min app version for iOS is 24.1
+Min app version for Android is 2.24.1
+What is the experience on the WA consumer side at various points in the call setup flow?
+
+When a WA consumer calls a business, the local ringback tone starts immediately if the WA consumer device has internet connectivity.
+
+The call UI shows ‘Calling BUSINESS_NAME’. When Cloud API receives the consumer call request and pre-accepts the call, the call UI changes to ‘Ringing BUSINESS_NAME’. After you make the accept graph API call, the call UI changes to an active call window showing live timer for the call duration.
+
+Is calling supported for end users from WhatsApp Web or WhatsApp Desktop apps?
+
+No. WhatsApp Web does not support consumer-v-consumer or business calls. Desktop apps support only consumer-v-consumer calls at this point.
+
+Business Initiated Calling FAQ
+What WhatsApp versions and client platforms support the business initiated calling feature?
+
+WhatsApp Client versions 2.24.14.x and onwards support the call permission requests and business initiated calling feature.
+
+Both WhatsApp Android and iOS platforms support the feature.
+
+How to avoid 138011 in Business Initiated and user initiated conversation while dev/integration/testing?
+
+User Initiated conversation:
+
+Send a message to the Cloud API number from the WhatsApp consumer account
+Send any message apart from the call permission message to the user
+Send a call permission request to the user
+Accept the call permission requests on the user’s device
+Business Initiated conversation:
+
+Send a template message to the user from the business
+Send the call permission request to the user
+Accept the call permission requests on the user’s device
+Is there a way to reset the call permission request limits?
+
+A connected call will reset the call permission limits.
+
+What happens if the WhatsApp user has set up Silence Unknown Callers settings?
+
+Business initiated calls bypass ‘Silence Unknown Callers’ settings since the call can only happen after explicit permission provided by the user.
+
+Why is my Call Permission Request message rendered differently?
+
+Whatsapp’s renders messages on unsupported client app versions differently than supported ones.
+
+After the WhatsApp user updates their client app, it will be rendered correctly.
+
+I received error 138001 after sending a Call Permission Request, what do I do?
+
+Please view error codes in our troubleshooting page
+
+Does the permission expire after five connected calls have been made? I am seeing error 138012.
+
+5 connected calls in 24 hours is simply a time window based running limit. Reaching that limit does not close the permission, permission remains open until the full 7 days. The 6th call can happen 24hrs after the 1st call.
+
+We can simply think of this as a rate limit for business initiated calls. A maximum of 35 calls can happen over 7 days.
+
+Session Initiation Protocol (SIP) FAQ
+See SIP Errors for SIP specific errors and possible solutions.
+
+Why are we not getting SIP INVITE when WhatsApp users calls?
+
+Possible reasons include
+
+TLS certificate validation error: See How to test if you have a valid TLS certificate
+SIP is not configured. Fetch calling configuration to make sure SIP is enabled
+The app that configured the SIP server does not have whatsapp_business_messaging permission on the business phone number. You can try to send a message using the same business phone number as a way to verify you've the right permissions
+Why is our SIP TERMINATE to Meta is not hanging up on WhatsApp user side?
+
+Common reason is TLS handshake failure when your SIP server is trying to establish a TLS session with Meta SIP server. Do a network packet capture of your SIP traffic or check your SIP server logs to confirm successful TLS handshake
+
+Why is my SIP server continuously responding with 401 Unauthorized for user initiated calls?
+
+Meta supports SIP digest auth for user initiated calls. When your SIP server responds with 401 Unauthorized (see example flow), Meta SIP server will resend the INVITE with proper Authorization header. Make sure you're configuring your SIP server with username as the business phone number and password as the Meta generated password for the business phone number.
+
+Alternatively, you can disable digest auth on your SIP server, although this is NOT recommended from a security best practices point of view.
+
+Why is my SIP server responding with 488 Not Acceptable Here?
+
+Consult your SIP server documentation or vendor. The likely reason is your SIP server does not support WebRTC ICE (Interactive Connectivity Establishment) protocol. To fix this, you can configure your business phone number to use SDES instead.
+
+Do we need to SIP REGISTER business phone number to Meta SIP server?
+
+No. You should not send REGISTER requests to our SIP server. Doing so is unnecessary resource consumption on both sides. REGISTER requests will fail with 403 Forbidden error. As such our SIP server owns only meta.vc domain and the only SIP users in that domain are regular WhatsApp consumer users. The WhatsApp Business Numbers belong to your own SIP domain that you configure using our settings API.
+
+Do you support SIP re-INVITEs?
+
+No. We don't support re-INVITES today. You'll receive a 500 Internal Server Error from Meta SIP server.

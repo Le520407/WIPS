@@ -121,6 +121,15 @@ const Messages = () => {
     }
   }, [messages]);
 
+  // Auto-refresh conversations list every 3 seconds
+  useEffect(() => {
+    const interval = setInterval(() => {
+      loadConversations();
+    }, 3000);
+
+    return () => clearInterval(interval);
+  }, []);
+
   // Auto-refresh messages when a conversation is selected
   useEffect(() => {
     if (!selectedConversation) return;
@@ -226,8 +235,16 @@ const Messages = () => {
     } else {
       messageService.getConversations()
         .then((data: any) => {
-          setConversations(data.conversations);
-          setAllConversations(data.conversations);
+          // Preserve the unread count for the currently selected conversation
+          const updatedConversations = data.conversations.map((conv: any) => {
+            if (conv.id === selectedConversation) {
+              return { ...conv, unreadCount: 0 };
+            }
+            return conv;
+          });
+          
+          setConversations(updatedConversations);
+          setAllConversations(updatedConversations);
         })
         .catch((err: any) => console.error(err));
     }
@@ -774,12 +791,18 @@ const Messages = () => {
           setTemplateVariables([]);
         }
         
+        // Reload conversations list to update last message
+        loadConversations();
+        
         // Reload messages for the current conversation instead of reloading the page
         if (selectedConversation) {
           // Reload messages for the selected conversation
           const conv = conversations.find(c => c.id === selectedConversation);
           if (conv) {
-            handleSelectConversation(conv);
+            // Wait a bit for the message to be saved in the database
+            setTimeout(() => {
+              refreshMessages(conv);
+            }, 500);
           }
         }
         
@@ -885,7 +908,7 @@ const Messages = () => {
         
         let mediaUrl = msg.mediaUrl;
         
-        if (msg.mediaId && !mediaUrl && ['image', 'video', 'audio', 'document'].includes(msg.type)) {
+        if (msg.mediaId && !mediaUrl && ['image', 'video', 'audio', 'document', 'sticker'].includes(msg.type)) {
           if (mediaCache[msg.mediaId]) {
             mediaUrl = mediaCache[msg.mediaId];
           } else {
@@ -1085,7 +1108,7 @@ const Messages = () => {
             let mediaUrl = msg.mediaUrl;
             
             // If message has mediaId but no mediaUrl, fetch it through our proxy
-            if (msg.mediaId && !mediaUrl && ['image', 'video', 'audio', 'document'].includes(msg.type)) {
+            if (msg.mediaId && !mediaUrl && ['image', 'video', 'audio', 'document', 'sticker'].includes(msg.type)) {
               // Check cache first
               if (mediaCache[msg.mediaId]) {
                 mediaUrl = mediaCache[msg.mediaId];

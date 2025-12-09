@@ -51,6 +51,14 @@ export const handleWebhook = async (req: Request, res: Response) => {
             await processMessageStatus(status, change.value.metadata);
           }
         }
+        
+        // Handle call events
+        if (change.value.calls) {
+          const { processCallWebhook } = require('../services/webhook.service');
+          for (const call of change.value.calls) {
+            await processCallWebhook(call, change.value.metadata);
+          }
+        }
       }
     }
 
