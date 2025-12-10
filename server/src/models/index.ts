@@ -6,6 +6,10 @@ import Call from './Call';
 import CallPermission from './CallPermission';
 import CallQuality from './CallQuality';
 import CallLimit from './CallLimit';
+import SipConfig from './SipConfig';
+import Group from './Group';
+import GroupParticipant from './GroupParticipant';
+import GroupJoinRequest from './GroupJoinRequest';
 
 // Define associations
 User.hasMany(Message, { foreignKey: 'user_id' });
@@ -29,4 +33,29 @@ CallQuality.belongsTo(User, { foreignKey: 'user_id' });
 User.hasMany(CallLimit, { foreignKey: 'user_id' });
 CallLimit.belongsTo(User, { foreignKey: 'user_id' });
 
-export { User, Message, Conversation, Template, Call, CallPermission, CallQuality, CallLimit };
+User.hasMany(SipConfig, { foreignKey: 'user_id' });
+SipConfig.belongsTo(User, { foreignKey: 'user_id' });
+
+User.hasMany(Group, { foreignKey: 'user_id' });
+Group.belongsTo(User, { foreignKey: 'user_id' });
+
+Group.hasMany(GroupParticipant, { foreignKey: 'group_id' });
+GroupParticipant.belongsTo(Group, { foreignKey: 'group_id' });
+
+Group.hasMany(GroupJoinRequest, { foreignKey: 'group_id' });
+GroupJoinRequest.belongsTo(Group, { foreignKey: 'group_id' });
+
+export {
+  User,
+  Message,
+  Conversation,
+  Template,
+  Call,
+  CallPermission,
+  CallQuality,
+  CallLimit,
+  SipConfig,
+  Group,
+  GroupParticipant,
+  GroupJoinRequest,
+};

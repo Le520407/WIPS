@@ -250,6 +250,11 @@ export const processMessageStatus = async (status: any, metadata: any) => {
       recipient_id: status.recipient_id
     });
 
+    // Log error details if status is failed
+    if (status.status === 'failed' && status.errors) {
+      console.error('❌ Message failed with errors:', JSON.stringify(status.errors, null, 2));
+    }
+
     // Update message status in database
     const messageId = status.id;
     const newStatus = status.status; // 'sent', 'delivered', 'read', 'failed'
@@ -262,6 +267,17 @@ export const processMessageStatus = async (status: any, metadata: any) => {
     if (message) {
       await message.update({ status: newStatus });
       console.log(`✅ Message status updated to "${newStatus}" for message:`, messageId);
+      
+      // Log additional context for failed messages
+      if (newStatus === 'failed') {
+        console.error('❌ Failed message details:', {
+          messageId: message.id,
+          type: message.type,
+          content: message.content?.substring(0, 50),
+          mediaId: message.media_id,
+          toNumber: message.to_number
+        });
+      }
     } else {
       console.log('⚠️  Message not found for status update:', messageId);
     }

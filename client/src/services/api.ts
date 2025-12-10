@@ -222,4 +222,7 @@ export const dashboardService = {
     api.get('/dashboard/stats').then(res => res.data)
 };
 
+// Export api instance
+export { api };
+
 export default api;

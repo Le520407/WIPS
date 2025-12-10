@@ -18,6 +18,8 @@ import callLimitRoutes from './routes/call-limit.routes';
 import callButtonRoutes from './routes/call-button.routes';
 import callAnalyticsRoutes from './routes/call-analytics.routes';
 import dashboardRoutes from './routes/dashboard.routes';
+import sipRoutes from './routes/sip.routes';
+import groupsRoutes from './routes/groups.routes';
 import signalingService from './services/signaling.service';
 
 dotenv.config();
@@ -48,6 +50,8 @@ app.use('/api/call/button', callButtonRoutes);
 app.use('/api/call/analytics', callAnalyticsRoutes);
 app.use('/api/missed-calls', missedCallRoutes);
 app.use('/api/dashboard', dashboardRoutes);
+app.use('/api/sip', sipRoutes);
+app.use('/api/groups', groupsRoutes);
 app.use('/api/webhooks', webhookConfigRoutes);
 app.use('/webhooks', webhookRoutes);
 

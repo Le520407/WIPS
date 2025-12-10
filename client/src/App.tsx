@@ -21,6 +21,9 @@ import MissedCalls from './pages/MissedCalls';
 import CallLimits from './pages/CallLimits';
 import CallButton from './pages/CallButton';
 import CallAnalytics from './pages/CallAnalytics';
+import SipSettings from './pages/SipSettings';
+import SipStatus from './pages/SipStatus';
+import Groups from './pages/Groups';
 import AuthCallback from './pages/AuthCallback';
 import Layout from './components/Layout';
 import PrivateRoute from './components/PrivateRoute';
@@ -51,6 +54,9 @@ function App() {
             <Route path="call-limits" element={<CallLimits />} />
             <Route path="call-button" element={<CallButton />} />
             <Route path="call-analytics" element={<CallAnalytics />} />
+            <Route path="sip-settings" element={<SipSettings />} />
+            <Route path="sip-status" element={<SipStatus />} />
+            <Route path="groups" element={<Groups />} />
             <Route path="review-tips" element={<ReviewTips />} />
             <Route path="marketing-limits" element={<MarketingLimits />} />
             <Route path="pacing" element={<PacingMonitor />} />

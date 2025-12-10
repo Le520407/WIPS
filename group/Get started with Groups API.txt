@@ -1,0 +1,59 @@
+Get started with Groups API
+Eligibility for Groups API
+
+To qualify for groups features, your business must meet the following requirement:
+
+Have a messaging limit of at least 100,000 business-initiated conversations in a rolling 24-hour period
+Be an Official Business Account (OBA)
+Learn more about Quality Ratings and Messaging Limits
+
+Overview
+Groups on are invite-only, meaning that potential group participants are ultimately in control of wether they want to join the group or not.
+
+When you create a group, a unique invite link that is generated which you can share to potential group participants. This link includes information about the group, enabling users to make an informed decision about wether or not they want to join the group.
+
+Once a user joins the group, a webhook is triggered, signaling that you are now eligible to send messages to the group.
+
+For a complete overview of available features, see the Groups API Features below.
+
+How to start using groups
+Prerequisites
+Before you get started with the Groups API, ensure that:
+
+Your business number is in use with Cloud API (not the WhatsApp Business app).
+Your webhook server is set up for use with Cloud API.
+Your app is subscribed to the following groups webhook fields:
+group_lifecycle_update
+group_participants_update
+group_settings_update
+group_status_update
+Your app is subscribed to the WhatsApp Business Account of your business phone number.
+Your app has the whatsapp_business_messaging permission for the business number.
+Step 2: Create a group
+Use the Create Group endpoint to create a group, providing a subject and an optional description. Once a group has been successfully created, a group_lifecycle_update webhook for successful group creation will be returned. This webhook will include a invite_link field with the invite link that you can now share with potential group participants.
+
+Step 3: Invite WhatsApp users to the group
+3.1 Add a group invite link template in Template Library to your account templates:
+Navigate to Template Library
+On the left, click the Group invite link dropdown, then click the Group invite upon request checkbox.
+Select the template you want to use, give it a name, and click Submit
+3.2 Send the invite link to potential group participants
+Once the template has been approved, use the template to invite members to the group using the invite link provided in the webhook from Step 2.
+
+You can follow the instructions in the Send Group Invite Link Template Message reference to send the invite link with the template you just added to your account.
+
+3.3 Notification of when participants join the group
+When a participant joins, a group_participants_update webhook for a group participant joining webhook will be triggered.
+
+Step 4: Send and receive messages
+You can now use the Cloud API send message endpoint to send messages to the group.
+
+Sent, delivered, and read status webhooks will be triggered when there are updates in the group. Replies from participants will also trigger webhooks.
+
+Learn more about how to send and receive group messages
+
+Features
+To learn more about all the features available in groups:
+
+Visit the Group Management reference to learn more about features available for managing groups.
+Visit the Group Messaging reference to understand sending, receiving, and other messaging functions in groups.

@@ -1,8 +1,12 @@
 import { Response } from 'express';
 import { AuthRequest } from '../middleware/auth.middleware';
 import { sendWhatsAppMessage, uploadMediaToWhatsApp, sendMediaMessage } from '../services/whatsapp.service';
+import { AudioConverterService } from '../services/audio-converter.service';
 import Message from '../models/Message';
 import Conversation from '../models/Conversation';
+import fs from 'fs/promises';
+import path from 'path';
+import os from 'os';
 
 export const getMessages = async (req: AuthRequest, res: Response) => {
   try {
@@ -141,12 +145,59 @@ export const markConversationAsRead = async (req: AuthRequest, res: Response) =>
 };
 
 export const uploadMedia = async (req: AuthRequest, res: Response) => {
+  let tempInputPath: string | null = null;
+  let tempOutputPath: string | null = null;
+  
   try {
     if (!req.file) {
       return res.status(400).json({ error: 'No file uploaded' });
     }
 
-    const { buffer, mimetype, originalname } = req.file;
+    let { buffer, mimetype, originalname } = req.file;
+    
+    // Check if audio file needs conversion (WebM -> OGG)
+    if (mimetype.startsWith('audio/') && AudioConverterService.needsConversion(mimetype)) {
+      console.log('🔄 Audio file needs conversion:', {
+        originalType: mimetype,
+        originalName: originalname
+      });
+      
+      try {
+        // Create temp files
+        const tempDir = os.tmpdir();
+        tempInputPath = path.join(tempDir, `input_${Date.now()}_${originalname}`);
+        const outputFilename = AudioConverterService.getOggFilename(originalname);
+        tempOutputPath = path.join(tempDir, `output_${Date.now()}_${outputFilename}`);
+        
+        // Write input file
+        await fs.writeFile(tempInputPath, buffer);
+        
+        // Convert to OGG
+        await AudioConverterService.convertToOgg(tempInputPath, tempOutputPath);
+        
+        // Read converted file
+        buffer = await fs.readFile(tempOutputPath);
+        mimetype = 'audio/ogg; codecs=opus';
+        originalname = outputFilename;
+        
+        console.log('✅ Audio converted successfully:', {
+          newType: mimetype,
+          newName: originalname,
+          newSize: buffer.length
+        });
+      } catch (conversionError: any) {
+        console.error('⚠️ Audio conversion failed, using original file:', conversionError.message);
+        // Continue with original file if conversion fails
+      } finally {
+        // Clean up temp files
+        if (tempInputPath) {
+          try { await fs.unlink(tempInputPath); } catch (e) {}
+        }
+        if (tempOutputPath) {
+          try { await fs.unlink(tempOutputPath); } catch (e) {}
+        }
+      }
+    }
     
     // Upload to WhatsApp
     const mediaId = await uploadMediaToWhatsApp(buffer, mimetype, originalname);
@@ -159,6 +210,15 @@ export const uploadMedia = async (req: AuthRequest, res: Response) => {
     });
   } catch (error) {
     console.error('Upload media error:', error);
+    
+    // Clean up temp files on error
+    if (tempInputPath) {
+      try { await fs.unlink(tempInputPath); } catch (e) {}
+    }
+    if (tempOutputPath) {
+      try { await fs.unlink(tempOutputPath); } catch (e) {}
+    }
+    
     res.status(500).json({ error: 'Failed to upload media' });
   }
 };

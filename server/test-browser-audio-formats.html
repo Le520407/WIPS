@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>浏览器音频格式支持测试</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            border-bottom: 2px solid #4CAF50;
+            padding-bottom: 10px;
+        }
+        .format {
+            padding: 10px;
+            margin: 5px 0;
+            border-radius: 4px;
+            font-family: monospace;
+        }
+        .supported {
+            background: #d4edda;
+            color: #155724;
+        }
+        .not-supported {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        .test-section {
+            margin-top: 30px;
+            padding: 20px;
+            background: #e3f2fd;
+            border-radius: 4px;
+        }
+        button {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 5px;
+        }
+        button:hover {
+            background: #45a049;
+        }
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        .recording {
+            background: #f44336;
+        }
+        .recording:hover {
+            background: #da190b;
+        }
+        #result {
+            margin-top: 20px;
+            padding: 15px;
+            background: #fff3cd;
+            border-radius: 4px;
+            white-space: pre-wrap;
+            font-family: monospace;
+            font-size: 12px;
+        }
+        .info {
+            background: #d1ecf1;
+            padding: 15px;
+            border-radius: 4px;
+            margin: 20px 0;
+            border-left: 4px solid #0c5460;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎤 浏览器音频格式支持测试</h1>
+        
+        <div class="info">
+            <strong>浏览器信息：</strong><br>
+            <span id="browserInfo"></span>
+        </div>
+
+        <h2>MediaRecorder 支持的格式</h2>
+        <div id="formats"></div>
+
+        <div class="test-section">
+            <h2>实际录音测试</h2>
+            <p>点击按钮测试实际录音，查看生成的文件格式：</p>
+            <button id="startBtn" onclick="startRecording()">开始录音</button>
+            <button id="stopBtn" onclick="stopRecording()" disabled>停止录音</button>
+            <div id="result"></div>
+        </div>
+    </div>
+
+    <script>
+        // 显示浏览器信息
+        document.getElementById('browserInfo').textContent = navigator.userAgent;
+
+        // 测试格式支持
+        const formats = [
+            'audio/webm',
+            'audio/webm;codecs=opus',
+            'audio/webm;codecs=vp8',
+            'audio/ogg',
+            'audio/ogg;codecs=opus',
+            'audio/ogg;codecs=vorbis',
+            'audio/mp4',
+            'audio/mp4;codecs=mp4a',
+            'audio/mpeg',
+            'audio/aac',
+            'audio/wav'
+        ];
+
+        const formatsDiv = document.getElementById('formats');
+        
+        formats.forEach(format => {
+            const supported = MediaRecorder.isTypeSupported(format);
+            const div = document.createElement('div');
+            div.className = `format ${supported ? 'supported' : 'not-supported'}`;
+            div.textContent = `${supported ? '✅' : '❌'} ${format}`;
+            formatsDiv.appendChild(div);
+        });
+
+        // 录音测试
+        let mediaRecorder = null;
+        let chunks = [];
+
+        async function startRecording() {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                
+                // 使用与 Messages.tsx 相同的逻辑
+                const testFormats = [
+                    'audio/ogg;codecs=opus',
+                    'audio/mp4',
+                    'audio/webm;codecs=opus'
+                ];
+                
+                let mimeType = 'audio/webm';
+                
+                for (const format of testFormats) {
+                    if (MediaRecorder.isTypeSupported(format)) {
+                        mimeType = format;
+                        console.log(`✅ Using format: ${format}`);
+                        break;
+                    }
+                }
+                
+                document.getElementById('result').textContent = 
+                    `🎤 开始录音...\n` +
+                    `选择的格式: ${mimeType}\n` +
+                    `MediaRecorder.isTypeSupported('${mimeType}'): ${MediaRecorder.isTypeSupported(mimeType)}`;
+                
+                mediaRecorder = new MediaRecorder(stream, { mimeType });
+                chunks = [];
+
+                mediaRecorder.ondataavailable = (e) => {
+                    if (e.data.size > 0) {
+                        chunks.push(e.data);
+                    }
+                };
+
+                mediaRecorder.onstop = () => {
+                    const blob = new Blob(chunks, { type: mimeType });
+                    
+                    // 确定文件扩展名
+                    let extension = 'webm';
+                    if (mimeType.includes('ogg')) {
+                        extension = 'ogg';
+                    } else if (mimeType.includes('mp4')) {
+                        extension = 'm4a';
+                    }
+                    
+                    const file = new File([blob], `test_${Date.now()}.${extension}`, { type: mimeType });
+                    
+                    const result = 
+                        `✅ 录音完成！\n\n` +
+                        `文件信息：\n` +
+                        `- 文件名: ${file.name}\n` +
+                        `- MIME 类型: ${file.type}\n` +
+                        `- 文件大小: ${file.size} bytes (${(file.size / 1024).toFixed(2)} KB)\n` +
+                        `- Blob 类型: ${blob.type}\n\n` +
+                        `这就是会上传到 WhatsApp 的文件格式！\n\n` +
+                        `⚠️ 如果 MIME 类型是 audio/webm，WhatsApp 会拒绝！`;
+                    
+                    document.getElementById('result').textContent = result;
+                    
+                    // 创建下载链接
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = file.name;
+                    a.textContent = '下载录音文件';
+                    a.style.display = 'block';
+                    a.style.marginTop = '10px';
+                    document.getElementById('result').appendChild(a);
+                    
+                    stream.getTracks().forEach(track => track.stop());
+                };
+
+                mediaRecorder.start();
+                document.getElementById('startBtn').disabled = true;
+                document.getElementById('stopBtn').disabled = false;
+                document.getElementById('stopBtn').className = 'recording';
+                
+            } catch (error) {
+                document.getElementById('result').textContent = 
+                    `❌ 错误: ${error.message}\n\n` +
+                    `请确保已授予麦克风权限。`;
+            }
+        }
+
+        function stopRecording() {
+            if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+                mediaRecorder.stop();
+                document.getElementById('startBtn').disabled = false;
+                document.getElementById('stopBtn').disabled = true;
+                document.getElementById('stopBtn').className = '';
+            }
+        }
+    </script>
+</body>
+</html>

@@ -46,9 +46,13 @@ const MissedCalls: React.FC = () => {
       setLoading(true);
       const params = showUnreadOnly ? { unread_only: 'true' } : {};
       const response = await api.get('/missed-calls', { params });
-      setMissedCalls(response.data.missed_calls);
-      setGroupedCalls(response.data.grouped_by_phone);
-      setStatistics(response.data.statistics);
+      setMissedCalls(response.data.missed_calls || []);
+      setGroupedCalls(response.data.grouped_by_phone || {});
+      setStatistics(response.data.statistics || {
+        total_missed: 0,
+        unique_contacts: 0,
+        needs_callback: 0,
+      });
       setError(null);
     } catch (err: any) {
       setError(err.response?.data?.error || 'Failed to load missed calls');

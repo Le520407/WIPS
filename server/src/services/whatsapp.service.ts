@@ -282,7 +282,17 @@ export const sendMediaMessage = async (to: string, mediaId: string, type: string
       
       case 'audio':
         messageBody.audio = {
-          id: mediaId
+          id: mediaId,
+          voice: false  // Basic audio message
+        };
+        break;
+      
+      case 'voice':
+        // Voice messages: must be OGG with OPUS codec
+        messageBody.type = 'audio';  // API expects type "audio"
+        messageBody.audio = {
+          id: mediaId,
+          voice: true  // Voice message with transcription support
         };
         break;
       

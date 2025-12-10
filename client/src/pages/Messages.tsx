@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
 import { Send, FileText, MessageSquare, Search, Zap, Plus, X, Check, CheckCheck } from 'lucide-react';
 import { messageService, templateService } from '../services/api';
+import { VoiceRecorder } from '../components/VoiceRecorder';
+import { VoiceMessage } from '../components/VoiceMessage';
 
 const Messages = () => {
   const [conversations, setConversations] = useState<any[]>([]);
@@ -76,7 +78,7 @@ const Messages = () => {
   const [mediaCaption, setMediaCaption] = useState('');
   const [uploading, setUploading] = useState(false);
   const [mediaCache, setMediaCache] = useState<{[key: string]: string}>({});
-  const [mediaType, setMediaType] = useState<'image' | 'document' | 'video' | 'audio'>('image');
+  const [mediaType, setMediaType] = useState<'image' | 'document' | 'video' | 'audio' | 'voice'>('image');
   
   // Search
   const [searchQuery, setSearchQuery] = useState('');
@@ -435,6 +437,124 @@ const Messages = () => {
     setListSections(newSections);
   };
 
+  // Voice recording functions - DISABLED
+  // Reason: Browser WebM format not compatible with WhatsApp
+  // Solution: Use Audio type with OGG files uploaded via URL or file
+  /*
+  const startRecording = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      
+      // WhatsApp supported formats (from official docs):
+      // ✅ audio/ogg (OPUS codec only) - Voice message standard
+      // ✅ audio/mp4 (AAC) - Safari ONLY
+      // ❌ audio/webm - NOT SUPPORTED by WhatsApp!
+      
+      // CRITICAL: Chrome claims to support MP4 but generates invalid files!
+      // We must use WebM (Chrome's native format) and convert on server
+      
+      let mimeType = 'audio/webm;codecs=opus'; // Chrome's native format
+      
+      // Check if browser supports WebM with Opus
+      if (!MediaRecorder.isTypeSupported('audio/webm;codecs=opus')) {
+        // Fallback to plain WebM
+        if (MediaRecorder.isTypeSupported('audio/webm')) {
+          mimeType = 'audio/webm';
+        } else {
+          console.error('❌ Browser does not support audio recording!');
+          alert('您的浏览器不支持音频录制功能。');
+          stream.getTracks().forEach(track => track.stop());
+          return;
+        }
+      }
+      
+      console.log('🎤 Recording with format:', mimeType);
+      console.log('⚠️  Note: WebM will be converted to OGG on server for WhatsApp compatibility');
+      
+      const recorder = new MediaRecorder(stream, { mimeType });
+      const chunks: Blob[] = [];
+
+      recorder.ondataavailable = (e) => {
+        if (e.data.size > 0) {
+          chunks.push(e.data);
+        }
+      };
+
+      recorder.onstop = () => {
+        const blob = new Blob(chunks, { type: mimeType });
+        
+        // Always use .webm extension for WebM files
+        const file = new File([blob], `voice_${Date.now()}.webm`, { type: mimeType });
+        
+        console.log('🎤 Recording complete:', {
+          size: file.size,
+          type: file.type,
+          name: file.name,
+          sizeKB: (file.size / 1024).toFixed(2) + ' KB'
+        });
+        
+        // Check file size limits
+        if (file.size > 16 * 1024 * 1024) {
+          alert('录音文件过大（超过 16MB）。请录制较短的消息。');
+          stream.getTracks().forEach(track => track.stop());
+          return;
+        }
+        
+        if (file.size > 512 * 1024) {
+          console.warn('⚠️ File size > 512KB - user will see download icon instead of play icon');
+        }
+        
+        console.log('📤 File will be converted to OGG on server before sending to WhatsApp');
+        
+        setSelectedFile(file);
+        setFilePreview(URL.createObjectURL(blob));
+        stream.getTracks().forEach(track => track.stop());
+      };
+
+      recorder.start();
+      setMediaRecorder(recorder);
+      setIsRecording(true);
+      setRecordingTime(0);
+
+      // Start timer
+      const timer = setInterval(() => {
+        setRecordingTime(prev => prev + 1);
+      }, 1000);
+
+      // Store timer ID for cleanup
+      (recorder as any).timerId = timer;
+    } catch (error) {
+      console.error('Error starting recording:', error);
+      alert('无法访问麦克风。请确保已授予麦克风权限。');
+    }
+  };
+
+  const stopRecording = () => {
+    if (mediaRecorder && isRecording) {
+      mediaRecorder.stop();
+      setIsRecording(false);
+      clearInterval((mediaRecorder as any).timerId);
+    }
+  };
+
+  const cancelRecording = () => {
+    if (mediaRecorder && isRecording) {
+      mediaRecorder.stop();
+      setIsRecording(false);
+      setRecordingTime(0);
+      clearInterval((mediaRecorder as any).timerId);
+      setSelectedFile(null);
+      setFilePreview(null);
+    }
+  };
+
+  const formatRecordingTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
+  */
+
   // Handle typing indicator
   const handleTyping = () => {
     if (!recipient) return;
@@ -670,11 +790,13 @@ const Messages = () => {
           try {
             // Upload file first
             const uploadResult = await messageService.uploadMedia(selectedFile);
+            
             // Send media message with media ID, type, caption, filename, and optional context
+            // Voice type will be handled by backend (converts to audio with voice: true)
             await messageService.sendMediaMessage(
               recipient, 
               uploadResult.mediaId, 
-              mediaType, 
+              mediaType,  // Send actual type (including 'voice')
               mediaCaption,
               selectedFile.name,  // Pass the actual filename
               replyingTo?.messageId  // Pass context if replying
@@ -1316,11 +1438,13 @@ const Messages = () => {
                       />
                     )}
                     
-                    {/* Audio Message */}
-                    {msg.type === 'audio' && msg.mediaUrl && (
-                      <div className="px-4 py-3">
-                        <audio src={msg.mediaUrl} controls className="w-full" />
-                      </div>
+                    {/* Audio/Voice Message */}
+                    {(msg.type === 'audio' || msg.type === 'voice') && (
+                      <VoiceMessage
+                        mediaUrl={msg.mediaUrl}
+                        mediaId={msg.mediaId}
+                        isSent={msg.from === 'me'}
+                      />
                     )}
                     
                     {/* Document Message */}
@@ -1590,7 +1714,7 @@ const Messages = () => {
                     )}
                     
                     {/* Text Content / Caption */}
-                    {msg.content && !['document', 'location', 'contacts', 'interactive', 'reaction', 'sticker'].includes(msg.type) && (
+                    {msg.content && !['image', 'video', 'audio', 'document', 'location', 'contacts', 'interactive', 'reaction', 'sticker'].includes(msg.type) && (
                       <div className="px-4 py-2">
                         <p>{msg.content}</p>
                       </div>
@@ -2187,37 +2311,65 @@ const Messages = () => {
                     </svg>
                     <p className="text-xs">Audio</p>
                   </button>
+                  <button
+                    onClick={() => {
+                      setMessageMode('media');
+                      setMediaType('voice');
+                      setSelectedTemplate(null);
+                      setTemplateVariables([]);
+                    }}
+                    className={`p-3 rounded-lg border-2 transition-colors ${
+                      messageMode === 'media' && mediaType === 'voice' ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-blue-300'
+                    }`}
+                    title="Voice message with transcription"
+                  >
+                    <svg className="w-6 h-6 mx-auto mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+                    </svg>
+                    <p className="text-xs">Voice</p>
+                    <p className="text-[10px] text-gray-400">w/ transcript</p>
+                  </button>
                 </div>
               )}
 
-              {/* File Upload Area */}
+              {/* File Upload Area or Voice Recording */}
               {!selectedFile ? (
-                <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-blue-400 transition-colors">
-                  <input
-                    type="file"
-                    id="file-upload"
-                    accept={
-                      mediaType === 'image' ? 'image/*' :
-                      mediaType === 'document' ? '.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv' :
-                      mediaType === 'video' ? 'video/*' :
-                      'audio/*'
-                    }
-                    onChange={(e) => handleFileSelect(e, mediaType)}
-                    className="hidden"
+                mediaType === 'voice' ? (
+                  <VoiceRecorder
+                    onRecordingComplete={(file) => {
+                      setSelectedFile(file);
+                      setFilePreview(URL.createObjectURL(file));
+                    }}
+                    onCancel={() => setMediaType('audio')}
                   />
-                  <label htmlFor="file-upload" className="cursor-pointer">
-                    <svg className="w-12 h-12 mx-auto text-gray-400 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-                    </svg>
-                    <p className="text-gray-600 mb-1">Click to upload {mediaType}</p>
-                    <p className="text-xs text-gray-400">
-                      {mediaType === 'image' && 'JPEG, PNG, GIF, WebP (max 5MB)'}
-                      {mediaType === 'document' && 'PDF, Word, Excel, PowerPoint (max 100MB)'}
-                      {mediaType === 'video' && 'MP4, 3GPP (max 16MB)'}
-                      {mediaType === 'audio' && 'AAC, MP3, AMR, OGG (max 16MB)'}
-                    </p>
-                  </label>
-                </div>
+                ) : (
+                  <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-blue-400 transition-colors">
+                    <input
+                      type="file"
+                      id="file-upload"
+                      accept={
+                        mediaType === 'image' ? 'image/*' :
+                        mediaType === 'document' ? '.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv' :
+                        mediaType === 'video' ? 'video/*' :
+                        'audio/*'
+                      }
+                      onChange={(e) => handleFileSelect(e, mediaType)}
+                      className="hidden"
+                    />
+                    <label htmlFor="file-upload" className="cursor-pointer">
+                      <svg className="w-12 h-12 mx-auto text-gray-400 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                      </svg>
+                      <p className="text-gray-600 mb-1">Click to upload {mediaType}</p>
+                      <p className="text-xs text-gray-400">
+                        {mediaType === 'image' && 'JPEG, PNG, GIF, WebP (max 5MB)'}
+                        {mediaType === 'document' && 'PDF, Word, Excel, PowerPoint (max 100MB)'}
+                        {mediaType === 'video' && 'MP4, 3GPP (max 16MB)'}
+                        {mediaType === 'audio' && 'AAC, MP3, AMR, OGG (max 16MB)'}
+                      </p>
+                    </label>
+                  </div>
+                )
               ) : (
                 <div className="space-y-3">
                   {/* File Preview */}
@@ -2241,7 +2393,7 @@ const Messages = () => {
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
                           )}
                         </svg>
-                        <p className="text-gray-600 font-medium">{selectedFile.name}</p>
+                        <p className="text-gray-600 font-medium">{selectedFile?.name}</p>
                         <p className="text-sm text-gray-400 mt-1">{mediaType.toUpperCase()} file ready to send</p>
                       </div>
                     )}
@@ -2264,8 +2416,8 @@ const Messages = () => {
 
                   {/* File Info */}
                   <div className="flex items-center justify-between text-sm text-gray-600 bg-gray-50 p-3 rounded-lg">
-                    <span>{selectedFile.name}</span>
-                    <span>{(selectedFile.size / 1024).toFixed(1)} KB</span>
+                    <span>{selectedFile?.name}</span>
+                    <span>{selectedFile ? (selectedFile.size / 1024).toFixed(1) : '0'} KB</span>
                   </div>
 
                   {/* Send Button */}

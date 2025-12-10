@@ -1,6 +1,6 @@
 import { Outlet, Link, useLocation } from 'react-router-dom';
 import { useState } from 'react';
-import { LayoutDashboard, MessageSquare, FileText, FolderOpen, LogOut, Shield, AlertTriangle, BookOpen, Webhook, Phone, Settings, ChevronDown, ChevronRight, TrendingUp, Zap, Library, GitCompare, PhoneMissed, BarChart3, PieChart } from 'lucide-react';
+import { LayoutDashboard, MessageSquare, FileText, FolderOpen, LogOut, Shield, AlertTriangle, BookOpen, Webhook, Phone, Settings, ChevronDown, ChevronRight, TrendingUp, Zap, Library, GitCompare, PhoneMissed, BarChart3, PieChart, Users } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import DemoModeBanner from './DemoModeBanner';
 import MissedCallBadge from './MissedCallBadge';
@@ -19,6 +19,7 @@ const Layout = () => {
     ...(isDemoMode ? [{ path: '/demo-info', icon: LayoutDashboard, label: 'Demo Info' }] : []),
     { path: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
     { path: '/messages', icon: MessageSquare, label: 'Messages' },
+    { path: '/groups', icon: Users, label: 'Groups' },
   ];
 
   // Calling section
@@ -26,6 +27,8 @@ const Layout = () => {
     { path: '/calls', icon: Phone, label: 'Calls' },
     { path: '/missed-calls', icon: PhoneMissed, label: 'Missed Calls', badge: true },
     { path: '/call-settings', icon: Settings, label: 'Settings' },
+    { path: '/sip-settings', icon: Settings, label: 'SIP Settings' },
+    { path: '/sip-status', icon: TrendingUp, label: 'SIP Status' },
     { path: '/call-quality', icon: TrendingUp, label: 'Quality' },
     { path: '/call-limits', icon: BarChart3, label: 'Limits' },
     { path: '/call-button', icon: Phone, label: 'Call Button' },
