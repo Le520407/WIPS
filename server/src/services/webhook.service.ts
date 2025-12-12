@@ -322,10 +322,12 @@ export const processCallWebhook = async (call: any, metadata: any) => {
       'CANCELED': 'missed',
       'FAILED': 'failed',
       'BUSY': 'rejected',
+      'TIMEOUT': 'missed',  // 添加超时状态
+      'UNANSWERED': 'missed',  // 添加未接听状态
     };
 
     const rawStatus = call.status ? call.status.toUpperCase() : 'RINGING';
-    const normalizedStatus = statusMap[rawStatus] || call.status?.toLowerCase() || 'ringing';
+    let normalizedStatus = statusMap[rawStatus] || call.status?.toLowerCase() || 'ringing';
     
     console.log(`📊 Status mapping: ${call.status} (${rawStatus}) → ${normalizedStatus}`);
 
@@ -349,8 +351,17 @@ export const processCallWebhook = async (call: any, metadata: any) => {
             status: normalizedStatus,
           };
 
+          // Check if this is a missed call
+          // If call ended but was never connected, it's a missed call
+          const isIncoming = normalizedFrom !== metadata.phone_number_id;
+          if (isIncoming && normalizedStatus === 'ended' && existingCall.status === 'ringing') {
+            updateData.status = 'missed';
+            normalizedStatus = 'missed';
+            console.log('📞 Call ended without being answered - marking as MISSED');
+          }
+
           // If call ended, calculate duration
-          if (normalizedStatus === 'ended' && call.end_time) {
+          if ((normalizedStatus === 'ended' || normalizedStatus === 'missed') && call.end_time) {
             updateData.end_time = new Date(parseInt(call.end_time) * 1000);
             
             if (call.start_time) {
@@ -361,22 +372,27 @@ export const processCallWebhook = async (call: any, metadata: any) => {
           }
 
           await existingCall.update(updateData);
-          console.log('✅ Call updated:', call.id);
+          console.log('✅ Call updated:', call.id, '- Status:', normalizedStatus);
 
           // Update call quality metrics
-          const isIncoming = normalizedFrom !== metadata.phone_number_id;
           if (isIncoming) {
             const { updateCallQuality } = require('../controllers/call-quality.controller');
             const phoneNumber = call.from;
             
             // Determine call outcome for quality tracking
             let callOutcome: 'connected' | 'missed' | 'rejected' | 'failed' = 'failed';
-            if (normalizedStatus === 'ended' || normalizedStatus === 'connected') {
+            if (normalizedStatus === 'connected') {
+              callOutcome = 'connected';
+            } else if (normalizedStatus === 'ended' && existingCall.status === 'connected') {
+              // Call was connected and then ended normally
               callOutcome = 'connected';
             } else if (normalizedStatus === 'missed') {
               callOutcome = 'missed';
             } else if (normalizedStatus === 'rejected') {
               callOutcome = 'rejected';
+            } else if (normalizedStatus === 'ended' && existingCall.status === 'ringing') {
+              // Call ended while ringing - it's a missed call
+              callOutcome = 'missed';
             }
             
             await updateCallQuality(user.id, phoneNumber, callOutcome);

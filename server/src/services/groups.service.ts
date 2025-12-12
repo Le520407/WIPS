@@ -4,7 +4,7 @@ import GroupParticipant from '../models/GroupParticipant';
 import GroupJoinRequest from '../models/GroupJoinRequest';
 
 const WHATSAPP_API_URL = process.env.WHATSAPP_API_URL || 'https://graph.facebook.com/v21.0';
-const WHATSAPP_TOKEN = process.env.WHATSAPP_TOKEN;
+const WHATSAPP_TOKEN = process.env.WHATSAPP_ACCESS_TOKEN || process.env.WHATSAPP_TOKEN;
 
 interface CreateGroupParams {
   userId: string;
@@ -81,12 +81,6 @@ class GroupsService {
       // Get groups from database
       const groups = await Group.findAll({
         where: { user_id: userId },
-        include: [
-          {
-            model: GroupParticipant,
-            as: 'participants',
-          },
-        ],
         order: [['created_at', 'DESC']],
       });
 

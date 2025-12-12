@@ -1640,3 +1640,27 @@ export const getQualityRecommendations = (qualityRating: string) => {
   
   return recommendations[qualityRating] || recommendations['UNKNOWN'];
 };
+
+
+/**
+ * Delete a message
+ * https://developers.facebook.com/docs/whatsapp/cloud-api/guides/send-messages#deleting-messages
+ */
+export const deleteMessage = async (messageId: string) => {
+  try {
+    const response = await axios.delete(
+      `${WHATSAPP_API_URL}/${API_VERSION}/${PHONE_NUMBER_ID}/messages/${messageId}`,
+      {
+        headers: {
+          'Authorization': `Bearer ${ACCESS_TOKEN}`,
+        },
+      }
+    );
+
+    console.log('✅ Message deleted:', messageId);
+    return response.data;
+  } catch (error: any) {
+    console.error('❌ Delete message error:', error.response?.data || error.message);
+    throw error;
+  }
+};

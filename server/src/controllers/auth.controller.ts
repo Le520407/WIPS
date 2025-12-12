@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import jwt from 'jsonwebtoken';
+import bcrypt from 'bcrypt';
 import { AuthRequest } from '../middleware/auth.middleware';
 import { exchangeFacebookToken, getFacebookUserInfo } from '../services/facebook.service';
 import User from '../models/User';
@@ -56,8 +57,13 @@ export const testUserLogin = async (req: Request, res: Response) => {
         name: 'Test User',
         email: email || 'test@whatsapp-platform.com',
         whatsapp_account_id: process.env.WHATSAPP_BUSINESS_ACCOUNT_ID,
+        role: 'admin',
+        status: 'active',
       },
     });
+
+    // Update last login
+    await user.update({ last_login: new Date() });
 
     const token = jwt.sign(
       { id: user.id, facebookId: user.facebook_id },
@@ -75,6 +81,61 @@ export const testUserLogin = async (req: Request, res: Response) => {
   } catch (error) {
     console.error('Test user login error:', error);
     res.status(500).json({ error: 'Test user login failed' });
+  }
+};
+
+// Password login for admin system
+export const passwordLogin = async (req: Request, res: Response) => {
+  try {
+    const { email, password } = req.body;
+
+    if (!email || !password) {
+      return res.status(400).json({ error: 'Email and password required' });
+    }
+
+    // Find user
+    const user = await User.findOne({ where: { email } });
+    
+    if (!user || !user.password_hash) {
+      return res.status(401).json({ error: 'Invalid credentials' });
+    }
+
+    // Check password
+    const bcrypt = require('bcrypt');
+    const isValid = await bcrypt.compare(password, user.password_hash);
+    
+    if (!isValid) {
+      return res.status(401).json({ error: 'Invalid credentials' });
+    }
+
+    // Check if user is active
+    if (user.status !== 'active') {
+      return res.status(403).json({ error: 'Account is not active' });
+    }
+
+    // Update last login
+    await user.update({ last_login: new Date() });
+
+    const token = jwt.sign(
+      { id: user.id, email: user.email },
+      process.env.JWT_SECRET!,
+      { expiresIn: '7d' }
+    );
+
+    const userResponse = user.toJSON();
+    delete (userResponse as any).password_hash;
+    delete (userResponse as any).access_token;
+
+    console.log('✅ User logged in:', user.email);
+
+    res.json({ 
+      token, 
+      user: userResponse,
+      message: 'Login successful' 
+    });
+  } catch (error) {
+    console.error('Password login error:', error);
+    res.status(500).json({ error: 'Login failed' });
   }
 };
 
@@ -190,5 +251,80 @@ export const getCurrentUser = async (req: AuthRequest, res: Response) => {
     res.json({ user: user.toJSON() });
   } catch (error) {
     res.status(500).json({ error: 'Failed to get user' });
+  }
+};
+
+// Manual signup with WhatsApp credentials
+export const manualSignup = async (req: Request, res: Response) => {
+  try {
+    const { 
+      name, 
+      email, 
+      whatsapp_business_account_id, 
+      phone_number_id, 
+      access_token 
+    } = req.body;
+
+    // Validate required fields
+    if (!name || !email || !whatsapp_business_account_id || !phone_number_id || !access_token) {
+      return res.status(400).json({ 
+        error: 'All fields are required: name, email, whatsapp_business_account_id, phone_number_id, access_token' 
+      });
+    }
+
+    // Check if user already exists
+    const existingUser = await User.findOne({ where: { email } });
+    if (existingUser) {
+      return res.status(400).json({ error: 'User with this email already exists' });
+    }
+
+    // Create user
+    const user = await User.create({
+      facebook_id: `manual_${Date.now()}`,
+      name,
+      email,
+      access_token,
+      whatsapp_account_id: whatsapp_business_account_id,
+      role: 'admin',
+      status: 'active',
+    });
+
+    // Create account in admin system
+    try {
+      const Account = require('../models/Account').default;
+      await Account.create({
+        name: `${name}'s WhatsApp Business`,
+        type: 'business',
+        whatsapp_business_account_id,
+        phone_number_id,
+        access_token,
+        status: 'active',
+      });
+      console.log('✅ Account created in admin system');
+    } catch (accountError) {
+      console.error('⚠️ Failed to create account in admin system:', accountError);
+      // Continue anyway - user is created
+    }
+
+    // Create JWT token
+    const token = jwt.sign(
+      { id: user.id, email: user.email },
+      process.env.JWT_SECRET!,
+      { expiresIn: '7d' }
+    );
+
+    const userResponse = user.toJSON();
+    delete (userResponse as any).access_token;
+
+    console.log('✅ Manual signup successful:', user.email);
+
+    res.json({ 
+      token, 
+      user: userResponse,
+      message: 'Account created successfully!' 
+    });
+  } catch (error) {
+    console.error('Manual signup error:', error);
+    res.status(500).json({ error: 'Failed to create account' });
   }
 };

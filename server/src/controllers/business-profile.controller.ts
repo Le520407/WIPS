@@ -1,0 +1,98 @@
+import { Response } from 'express';
+import { AuthRequest } from '../middleware/auth.middleware';
+import {
+  getBusinessProfile,
+  updateBusinessProfile,
+  uploadProfilePicture,
+  deleteProfilePicture,
+  getBusinessVerticals
+} from '../services/business-profile.service';
+
+export const getBusinessProfileController = async (req: AuthRequest, res: Response) => {
+  try {
+    const profile = await getBusinessProfile();
+    res.json({ success: true, profile });
+  } catch (error: any) {
+    console.error('Get business profile error:', error);
+    res.status(error.response?.status || 500).json({
+      error: error.response?.data?.error?.message || error.message || 'Failed to get business profile'
+    });
+  }
+};
+
+export const updateBusinessProfileController = async (req: AuthRequest, res: Response) => {
+  try {
+    const { about, address, description, email, vertical, websites } = req.body;
+
+    // Validate websites array
+    if (websites && !Array.isArray(websites)) {
+      return res.status(400).json({ error: 'Websites must be an array' });
+    }
+
+    // Validate email format
+    if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      return res.status(400).json({ error: 'Invalid email format' });
+    }
+
+    const profileData: any = {};
+    if (about !== undefined) profileData.about = about;
+    if (address !== undefined) profileData.address = address;
+    if (description !== undefined) profileData.description = description;
+    if (email !== undefined) profileData.email = email;
+    if (vertical !== undefined) profileData.vertical = vertical;
+    if (websites !== undefined) profileData.websites = websites;
+
+    const result = await updateBusinessProfile(profileData);
+    res.json({ success: true, result });
+  } catch (error: any) {
+    console.error('Update business profile error:', error);
+    res.status(error.response?.status || 500).json({
+      error: error.response?.data?.error?.message || error.message || 'Failed to update business profile'
+    });
+  }
+};
+
+export const uploadProfilePictureController = async (req: AuthRequest, res: Response) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ error: 'No image file uploaded' });
+    }
+
+    const { buffer, mimetype } = req.file;
+
+    // Validate image type
+    if (!mimetype.startsWith('image/')) {
+      return res.status(400).json({ error: 'File must be an image' });
+    }
+
+    const result = await uploadProfilePicture(buffer, mimetype);
+    res.json({ success: true, result });
+  } catch (error: any) {
+    console.error('Upload profile picture error:', error);
+    res.status(error.response?.status || 500).json({
+      error: error.response?.data?.error?.message || error.message || 'Failed to upload profile picture'
+    });
+  }
+};
+
+export const deleteProfilePictureController = async (req: AuthRequest, res: Response) => {
+  try {
+    const result = await deleteProfilePicture();
+    res.json({ success: true, result });
+  } catch (error: any) {
+    console.error('Delete profile picture error:', error);
+    res.status(error.response?.status || 500).json({
+      error: error.response?.data?.error?.message || error.message || 'Failed to delete profile picture'
+    });
+  }
+};
+
+export const getBusinessVerticalsController = async (req: AuthRequest, res: Response) => {
+  try {
+    const verticals = getBusinessVerticals();
+    res.json({ success: true, verticals });
+  } catch (error: any) {
+    console.error('Get business verticals error:', error);
+    res.status(500).json({ error: 'Failed to get business verticals' });
+  }
+};

@@ -1,6 +1,6 @@
 import { Outlet, Link, useLocation } from 'react-router-dom';
 import { useState } from 'react';
-import { LayoutDashboard, MessageSquare, FileText, FolderOpen, LogOut, Shield, AlertTriangle, BookOpen, Webhook, Phone, Settings, ChevronDown, ChevronRight, TrendingUp, Zap, Library, GitCompare, PhoneMissed, BarChart3, PieChart, Users } from 'lucide-react';
+import { LayoutDashboard, MessageSquare, FileText, LogOut, Shield, BookOpen, Webhook, Phone, Settings, ChevronDown, ChevronRight, TrendingUp, PhoneMissed, Users, Globe, Building2, ShoppingCart, UserCog } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import DemoModeBanner from './DemoModeBanner';
 import MissedCallBadge from './MissedCallBadge';
@@ -22,39 +22,45 @@ const Layout = () => {
     { path: '/groups', icon: Users, label: 'Groups' },
   ];
 
-  // Calling section
+  // Calling section - Simplified from 9 to 4 items
   const callingItems = [
     { path: '/calls', icon: Phone, label: 'Calls' },
     { path: '/missed-calls', icon: PhoneMissed, label: 'Missed Calls', badge: true },
     { path: '/call-settings', icon: Settings, label: 'Settings' },
-    { path: '/sip-settings', icon: Settings, label: 'SIP Settings' },
-    { path: '/sip-status', icon: TrendingUp, label: 'SIP Status' },
-    { path: '/call-quality', icon: TrendingUp, label: 'Quality' },
-    { path: '/call-limits', icon: BarChart3, label: 'Limits' },
     { path: '/call-button', icon: Phone, label: 'Call Button' },
-    { path: '/call-analytics', icon: PieChart, label: 'Analytics' },
   ];
 
-  // Templates section
+  // Templates section - Simplified from 4 to 2 items
   const templateItems = [
     { path: '/templates', icon: FileText, label: 'Templates' },
-    { path: '/template-groups', icon: FolderOpen, label: 'Groups' },
-    { path: '/quality', icon: Shield, label: 'Quality' },
-    { path: '/paused', icon: AlertTriangle, label: 'Paused' },
+    { path: '/quality', icon: Shield, label: 'Quality Monitor' },
   ];
 
   // Resources section
   const resourceItems = [
     { path: '/review-tips', icon: BookOpen, label: 'Review Tips' },
-    { path: '/marketing-limits', icon: Zap, label: 'Marketing Limits' },
+    { path: '/marketing-limits', icon: TrendingUp, label: 'Marketing Limits' },
     { path: '/pacing', icon: TrendingUp, label: 'Pacing' },
-    { path: '/template-library', icon: Library, label: 'Library' },
-    { path: '/template-comparison', icon: GitCompare, label: 'Comparison' },
+    { path: '/template-library', icon: BookOpen, label: 'Library' },
+    { path: '/template-comparison', icon: BookOpen, label: 'Comparison' },
+    { path: '/conversational-components', icon: MessageSquare, label: 'Conversational Components' },
   ];
 
   // Settings (always visible at bottom of nav)
   const settingsItems = [
+    { path: '/account-settings', icon: Settings, label: 'Account Settings' },
+    { path: '/business-profile', icon: Building2, label: 'Business Profile' },
+    { path: '/commerce', icon: ShoppingCart, label: 'E-commerce' },
+    { path: '/marketing', icon: TrendingUp, label: 'Marketing Campaigns' },
+    { path: '/websites', icon: Globe, label: 'Website Management' },
     { path: '/webhook-settings', icon: Webhook, label: 'Webhook Settings' },
+  ];
+
+  // Admin section (only for admin/super_admin)
+  const adminItems = [
+    { path: '/admin/dashboard', icon: LayoutDashboard, label: 'Admin Dashboard' },
+    { path: '/admin/accounts', icon: Building2, label: 'Accounts' },
+    { path: '/admin/users', icon: UserCog, label: 'Users' },
   ];
 
   return (
@@ -197,6 +203,25 @@ const Layout = () => {
                 to={item.path}
                 className={`flex items-center px-6 py-3 text-gray-700 hover:bg-green-50 hover:text-green-600 ${
                   location.pathname === item.path ? 'bg-green-50 text-green-600 border-r-4 border-green-600' : ''
+                }`}
+              >
+                <item.icon className="w-5 h-5 mr-3" />
+                {item.label}
+              </Link>
+            ))}
+          </div>
+
+          {/* Admin Section */}
+          <div className="mt-4 pt-4 border-t">
+            <div className="px-6 py-2 text-xs font-semibold text-gray-500 uppercase">
+              Admin
+            </div>
+            {adminItems.map(item => (
+              <Link
+                key={item.path}
+                to={item.path}
+                className={`flex items-center px-6 py-3 text-gray-700 hover:bg-purple-50 hover:text-purple-600 ${
+                  location.pathname === item.path ? 'bg-purple-50 text-purple-600 border-r-4 border-purple-600' : ''
                 }`}
               >
                 <item.icon className="w-5 h-5 mr-3" />

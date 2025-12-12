@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { X } from 'lucide-react';
 import { useNotifications } from '../hooks/useNotifications';
 import IncomingCallNotification from './IncomingCallNotification';
@@ -6,6 +6,7 @@ import IncomingCallNotification from './IncomingCallNotification';
 const NotificationManager = () => {
   const [incomingCall, setIncomingCall] = useState<any>(null);
   const [errorDismissed, setErrorDismissed] = useState(false);
+  const callTimeoutRef = useRef<number | null>(null);
 
   const { connected, error } = useNotifications({
     onIncomingCall: (data) => {
@@ -14,10 +15,19 @@ const NotificationManager = () => {
     },
     onCallStatusUpdate: (data) => {
       console.log('📊 Call status update:', data);
-      // If the call ended, was rejected, missed, or cancelled, close the notification
+      
+      // Close notification if call ended, rejected, missed, cancelled, or failed
+      // We check against the data to close any matching call
       if (data.status === 'ended' || data.status === 'rejected' || data.status === 'missed' || data.status === 'cancelled' || data.status === 'failed') {
         console.log('🔕 Closing incoming call notification due to status:', data.status);
-        setIncomingCall(null);
+        // Close the notification by checking if it matches
+        setIncomingCall((current: any) => {
+          if (current && (data.call_id === current.call_id || data.id === current.id)) {
+            console.log('✅ Notification closed - call_id matched');
+            return null;
+          }
+          return current;
+        });
       }
     },
     onPermissionUpdate: (data) => {
@@ -25,6 +35,37 @@ const NotificationManager = () => {
       // You can show a toast notification here
     },
   });
+
+  // Auto-close notification after 60 seconds (fallback in case status update is missed)
+  useEffect(() => {
+    if (incomingCall) {
+      console.log('⏰ Setting auto-close timeout for incoming call notification (60s)');
+      
+      // Clear any existing timeout
+      if (callTimeoutRef.current) {
+        window.clearTimeout(callTimeoutRef.current);
+      }
+      
+      // Set new timeout
+      callTimeoutRef.current = window.setTimeout(() => {
+        console.log('⏰ Auto-closing incoming call notification (timeout)');
+        setIncomingCall(null);
+      }, 60000); // 60 seconds
+    } else {
+      // Clear timeout when notification is closed
+      if (callTimeoutRef.current) {
+        window.clearTimeout(callTimeoutRef.current);
+        callTimeoutRef.current = null;
+      }
+    }
+
+    // Cleanup on unmount
+    return () => {
+      if (callTimeoutRef.current) {
+        window.clearTimeout(callTimeoutRef.current);
+      }
+    };
+  }, [incomingCall]);
 
   return (
     <>

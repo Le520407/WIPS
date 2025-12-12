@@ -921,3 +921,30 @@ export const sendAddressController = async (req: AuthRequest, res: Response) => 
     res.status(500).json({ error: error.message || 'Failed to send address' });
   }
 };
+
+
+export const deleteMessageController = async (req: AuthRequest, res: Response) => {
+  try {
+    const { messageId } = req.params;
+    
+    if (!messageId) {
+      return res.status(400).json({ error: 'Message ID is required' });
+    }
+
+    const { deleteMessage } = require('../services/whatsapp.service');
+    const result = await deleteMessage(messageId);
+    
+    // Update message status in database
+    await Message.update(
+      { status: 'deleted' },
+      { where: { message_id: messageId, user_id: req.user!.id } }
+    );
+    
+    res.json({ success: true, result });
+  } catch (error: any) {
+    console.error('Delete message error:', error);
+    res.status(error.response?.status || 500).json({
+      error: error.response?.data?.error?.message || error.message || 'Failed to delete message'
+    });
+  }
+};

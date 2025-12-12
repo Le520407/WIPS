@@ -1,0 +1,432 @@
+import Group from '../models/Group';
+import GroupParticipant from '../models/GroupParticipant';
+import GroupJoinRequest from '../models/GroupJoinRequest';
+
+/**
+ * Groups Webhook Service
+ * 处理 WhatsApp Groups API 的 webhook 事件
+ */
+
+// Webhook 事件类型
+interface GroupLifecycleEvent {
+  timestamp: string;
+  group_id: string;
+  type: 'group_create' | 'group_delete';
+  request_id?: string;
+  subject?: string;
+  description?: string;
+  invite_link?: string;
+  join_approval_mode?: 'auto_approve' | 'approval_required';
+  errors?: Array<{
+    code: string;
+    message: string;
+    title: string;
+    error_data?: {
+      details: string;
+    };
+  }>;
+}
+
+interface GroupParticipantsEvent {
+  timestamp: string;
+  group_id: string;
+  type: 'participant_added' | 'participant_removed' | 'participant_left' | 'participant_promoted' | 'participant_demoted';
+  participants: Array<{
+    wa_id: string;
+    role?: 'admin' | 'member';
+  }>;
+}
+
+interface GroupSettingsEvent {
+  timestamp: string;
+  group_id: string;
+  type: 'settings_update';
+  settings: {
+    subject?: string;
+    description?: string;
+    icon?: string;
+    join_approval_mode?: 'auto_approve' | 'approval_required';
+  };
+  errors?: Array<{
+    code: string;
+    message: string;
+    title: string;
+  }>;
+}
+
+interface GroupStatusEvent {
+  timestamp: string;
+  group_id: string;
+  type: 'status_update';
+  status: 'active' | 'suspended';
+  reason?: string;
+}
+
+/**
+ * 处理群组生命周期事件
+ * - group_create: 群组创建成功/失败
+ * - group_delete: 群组删除成功/失败
+ */
+export const handleGroupLifecycleUpdate = async (event: GroupLifecycleEvent, userId: string) => {
+  console.log('🔄 Processing group lifecycle event:', {
+    type: event.type,
+    group_id: event.group_id,
+    has_errors: !!event.errors
+  });
+
+  try {
+    if (event.type === 'group_create') {
+      if (event.errors && event.errors.length > 0) {
+        // 群组创建失败
+        console.error('❌ Group creation failed:', event.errors);
+        // 可以在这里记录错误日志或通知用户
+        return {
+          success: false,
+          error: event.errors[0].message
+        };
+      }
+
+      // 群组创建成功
+      console.log('✅ Group created successfully:', {
+        group_id: event.group_id,
+        subject: event.subject,
+        invite_link: event.invite_link
+      });
+
+      // 查找或创建群组记录
+      const [group, created] = await Group.findOrCreate({
+        where: {
+          user_id: userId,
+          group_id: event.group_id
+        },
+        defaults: {
+          user_id: userId,
+          group_id: event.group_id,
+          subject: event.subject || '',
+          description: event.description || null,
+          invite_link: event.invite_link || null,
+          join_approval_mode: event.join_approval_mode || 'auto_approve',
+          total_participant_count: 1, // 创建者自己
+          suspended: false,
+          creation_timestamp: new Date(event.timestamp)
+        }
+      });
+
+      if (!created) {
+        // 更新现有记录
+        await group.update({
+          subject: event.subject || group.subject,
+          invite_link: event.invite_link || group.invite_link,
+          join_approval_mode: event.join_approval_mode || group.join_approval_mode
+        });
+      }
+
+      return {
+        success: true,
+        group_id: event.group_id,
+        invite_link: event.invite_link
+      };
+    } else if (event.type === 'group_delete') {
+      if (event.errors && event.errors.length > 0) {
+        // 群组删除失败
+        console.error('❌ Group deletion failed:', event.errors);
+        return {
+          success: false,
+          error: event.errors[0].message
+        };
+      }
+
+      // 群组删除成功
+      console.log('✅ Group deleted successfully:', event.group_id);
+
+      // 删除群组记录
+      await Group.destroy({
+        where: {
+          user_id: userId,
+          group_id: event.group_id
+        }
+      });
+
+      // 删除相关的参与者记录
+      await GroupParticipant.destroy({
+        where: { group_id: event.group_id }
+      });
+
+      // 删除相关的加入请求记录
+      await GroupJoinRequest.destroy({
+        where: { group_id: event.group_id }
+      });
+
+      return {
+        success: true,
+        group_id: event.group_id
+      };
+    }
+  } catch (error) {
+    console.error('Error handling group lifecycle event:', error);
+    throw error;
+  }
+};
+
+/**
+ * 处理群组参与者事件
+ * - group_participants_add: 参与者加入
+ * - group_participants_remove: 参与者被移除/主动离开
+ * - group_join_request_created: 加入请求创建
+ * - group_join_request_revoked: 加入请求取消
+ */
+export const handleGroupParticipantsUpdate = async (event: any, userId: string) => {
+  console.log('👥 Processing group participants event:', {
+    type: event.type,
+    group_id: event.group_id
+  });
+
+  try {
+    const group = await Group.findOne({
+      where: {
+        user_id: userId,
+        group_id: event.group_id
+      }
+    });
+
+    if (!group) {
+      console.warn('⚠️ Group not found:', event.group_id);
+      return { success: false, error: 'Group not found' };
+    }
+
+    if (event.type === 'group_participants_add') {
+      // 参与者加入（通过邀请链接或批准加入请求）
+      const participants = event.added_participants || [];
+      
+      for (const participant of participants) {
+        await GroupParticipant.findOrCreate({
+          where: {
+            group_id: event.group_id,
+            wa_id: participant.wa_id
+          },
+          defaults: {
+            group_id: event.group_id,
+            wa_id: participant.wa_id,
+            joined_at: new Date(parseInt(event.timestamp) * 1000)
+          }
+        });
+      }
+
+      // 更新参与者总数
+      const participantCount = await GroupParticipant.count({
+        where: { group_id: event.group_id }
+      });
+      await group.update({ total_participant_count: participantCount });
+
+      console.log('✅ Participants added:', participants.length);
+    } else if (event.type === 'group_participants_remove') {
+      // 参与者移除或离开
+      const participants = event.removed_participants || [];
+      
+      for (const participant of participants) {
+        await GroupParticipant.destroy({
+          where: {
+            group_id: event.group_id,
+            wa_id: participant.wa_id
+          }
+        });
+      }
+
+      // 更新参与者总数
+      const participantCount = await GroupParticipant.count({
+        where: { group_id: event.group_id }
+      });
+      await group.update({ total_participant_count: participantCount });
+
+      console.log('✅ Participants removed:', participants.length);
+    } else if (event.type === 'group_join_request_created') {
+      // 加入请求创建
+      await GroupJoinRequest.findOrCreate({
+        where: {
+          group_id: event.group_id,
+          wa_id: event.wa_id
+        },
+        defaults: {
+          group_id: event.group_id,
+          wa_id: event.wa_id,
+          join_request_id: event.join_request_id,
+          status: 'pending',
+          request_time: new Date(parseInt(event.timestamp) * 1000)
+        }
+      });
+
+      console.log('✅ Join request created:', event.join_request_id);
+    } else if (event.type === 'group_join_request_revoked') {
+      // 加入请求取消
+      await GroupJoinRequest.update(
+        { status: 'revoked' },
+        {
+          where: {
+            group_id: event.group_id,
+            join_request_id: event.join_request_id
+          }
+        }
+      );
+
+      console.log('✅ Join request revoked:', event.join_request_id);
+    }
+
+    return { success: true };
+  } catch (error) {
+    console.error('Error handling group participants event:', error);
+    throw error;
+  }
+};
+
+/**
+ * 处理群组设置更新事件
+ * - group_settings_update: 群组设置更新（主题、描述、头像等）
+ */
+export const handleGroupSettingsUpdate = async (event: any, userId: string) => {
+  console.log('⚙️ Processing group settings event:', {
+    group_id: event.group_id,
+    has_errors: !!event.errors
+  });
+
+  try {
+    if (event.errors && event.errors.length > 0) {
+      // 设置更新失败
+      console.error('❌ Group settings update failed:', event.errors);
+      return {
+        success: false,
+        error: event.errors[0].message
+      };
+    }
+
+    const group = await Group.findOne({
+      where: {
+        user_id: userId,
+        group_id: event.group_id
+      }
+    });
+
+    if (!group) {
+      console.warn('⚠️ Group not found:', event.group_id);
+      return { success: false, error: 'Group not found' };
+    }
+
+    // 更新群组设置
+    const updateData: any = {};
+    
+    // 检查主题更新
+    if (event.group_subject && event.group_subject.update_successful) {
+      updateData.subject = event.group_subject.text;
+    }
+    
+    // 检查描述更新
+    if (event.group_description && event.group_description.update_successful) {
+      updateData.description = event.group_description.text;
+    }
+
+    if (Object.keys(updateData).length > 0) {
+      await group.update(updateData);
+      console.log('✅ Group settings updated:', Object.keys(updateData));
+    }
+
+    return { success: true };
+  } catch (error) {
+    console.error('Error handling group settings event:', error);
+    throw error;
+  }
+};
+
+/**
+ * 处理群组状态更新事件
+ * - group_suspend: 群组暂停
+ * - group_suspend_cleared: 群组恢复
+ */
+export const handleGroupStatusUpdate = async (event: any, userId: string) => {
+  console.log('📊 Processing group status event:', {
+    group_id: event.group_id,
+    type: event.type
+  });
+
+  try {
+    const group = await Group.findOne({
+      where: {
+        user_id: userId,
+        group_id: event.group_id
+      }
+    });
+
+    if (!group) {
+      console.warn('⚠️ Group not found:', event.group_id);
+      return { success: false, error: 'Group not found' };
+    }
+
+    // 更新群组状态
+    const suspended = event.type === 'group_suspend';
+    await group.update({ suspended });
+
+    console.log(`✅ Group status updated: ${suspended ? 'suspended' : 'active'}`);
+
+    return { success: true };
+  } catch (error) {
+    console.error('Error handling group status event:', error);
+    throw error;
+  }
+};
+
+/**
+ * 主 webhook 处理函数
+ * 根据 field 类型分发到对应的处理函数
+ */
+export const processGroupsWebhook = async (change: any, userId: string) => {
+  const field = change.field;
+  const value = change.value;
+
+  console.log('📨 Processing groups webhook:', {
+    field,
+    has_groups: !!value.groups
+  });
+
+  if (!value.groups || value.groups.length === 0) {
+    console.warn('⚠️ No groups data in webhook');
+    return { success: false, error: 'No groups data' };
+  }
+
+  const results = [];
+
+  for (const groupEvent of value.groups) {
+    try {
+      let result;
+
+      switch (field) {
+        case 'group_lifecycle_update':
+          result = await handleGroupLifecycleUpdate(groupEvent, userId);
+          break;
+
+        case 'group_participants_update':
+          result = await handleGroupParticipantsUpdate(groupEvent, userId);
+          break;
+
+        case 'group_settings_update':
+          result = await handleGroupSettingsUpdate(groupEvent, userId);
+          break;
+
+        case 'group_status_update':
+          result = await handleGroupStatusUpdate(groupEvent, userId);
+          break;
+
+        default:
+          console.warn('⚠️ Unknown group webhook field:', field);
+          result = { success: false, error: 'Unknown field type' };
+      }
+
+      results.push(result);
+    } catch (error) {
+      console.error('Error processing group event:', error);
+      results.push({ success: false, error: (error as Error).message });
+    }
+  }
+
+  return {
+    success: results.every(r => r && r.success),
+    results
+  };
+};

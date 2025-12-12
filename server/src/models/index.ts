@@ -10,6 +10,25 @@ import SipConfig from './SipConfig';
 import Group from './Group';
 import GroupParticipant from './GroupParticipant';
 import GroupJoinRequest from './GroupJoinRequest';
+import Website from './Website';
+import ApiKey from './ApiKey';
+import ApiUsage from './ApiUsage';
+import MessageLog from './MessageLog';
+import Contact from './Contact';
+import ContactLabel from './ContactLabel';
+import AutoReplyRule from './AutoReplyRule';
+import ProductCatalog from './ProductCatalog';
+import CommerceSettings from './CommerceSettings';
+import Order from './Order';
+import Product from './Product';
+import MarketingTemplate from './MarketingTemplate';
+import MarketingCampaign from './MarketingCampaign';
+import Account from './Account';
+import AccountUser from './AccountUser';
+import Permission from './Permission';
+import RolePermission from './RolePermission';
+import AuditLog from './AuditLog';
+import ConversationalComponent from './ConversationalComponent';
 
 // Define associations
 User.hasMany(Message, { foreignKey: 'user_id' });
@@ -45,6 +64,63 @@ GroupParticipant.belongsTo(Group, { foreignKey: 'group_id' });
 Group.hasMany(GroupJoinRequest, { foreignKey: 'group_id' });
 GroupJoinRequest.belongsTo(Group, { foreignKey: 'group_id' });
 
+User.hasMany(Website, { foreignKey: 'user_id' });
+Website.belongsTo(User, { foreignKey: 'user_id' });
+
+Website.hasMany(ApiKey, { foreignKey: 'website_id' });
+ApiKey.belongsTo(Website, { foreignKey: 'website_id' });
+
+Website.hasMany(ApiUsage, { foreignKey: 'website_id' });
+ApiUsage.belongsTo(Website, { foreignKey: 'website_id' });
+
+ApiKey.hasMany(ApiUsage, { foreignKey: 'api_key_id' });
+ApiUsage.belongsTo(ApiKey, { foreignKey: 'api_key_id' });
+
+Website.hasMany(MessageLog, { foreignKey: 'website_id' });
+MessageLog.belongsTo(Website, { foreignKey: 'website_id' });
+
+User.hasMany(Contact, { foreignKey: 'user_id' });
+Contact.belongsTo(User, { foreignKey: 'user_id' });
+
+User.hasMany(ContactLabel, { foreignKey: 'user_id' });
+ContactLabel.belongsTo(User, { foreignKey: 'user_id' });
+
+User.hasMany(AutoReplyRule, { foreignKey: 'user_id' });
+AutoReplyRule.belongsTo(User, { foreignKey: 'user_id' });
+
+User.hasMany(ProductCatalog, { foreignKey: 'user_id' });
+ProductCatalog.belongsTo(User, { foreignKey: 'user_id' });
+
+User.hasMany(CommerceSettings, { foreignKey: 'user_id' });
+CommerceSettings.belongsTo(User, { foreignKey: 'user_id' });
+
+User.hasMany(Order, { foreignKey: 'user_id' });
+Order.belongsTo(User, { foreignKey: 'user_id' });
+
+User.hasMany(MarketingTemplate, { foreignKey: 'user_id' });
+MarketingTemplate.belongsTo(User, { foreignKey: 'user_id' });
+
+User.hasMany(MarketingCampaign, { foreignKey: 'user_id' });
+MarketingCampaign.belongsTo(User, { foreignKey: 'user_id' });
+
+User.hasMany(ConversationalComponent, { foreignKey: 'userId' });
+ConversationalComponent.belongsTo(User, { foreignKey: 'userId' });
+
+// Account associations
+Account.belongsToMany(User, { through: AccountUser, foreignKey: 'account_id' });
+User.belongsToMany(Account, { through: AccountUser, foreignKey: 'user_id' });
+
+AccountUser.belongsTo(Account, { foreignKey: 'account_id' });
+AccountUser.belongsTo(User, { foreignKey: 'user_id' });
+
+// Permission associations
+Permission.belongsToMany(RolePermission, { through: 'role_permissions', foreignKey: 'permission_id' });
+RolePermission.belongsTo(Permission, { foreignKey: 'permission_id' });
+
+// Audit log associations
+AuditLog.belongsTo(User, { foreignKey: 'user_id' });
+AuditLog.belongsTo(Account, { foreignKey: 'account_id' });
+
 export {
   User,
   Message,
@@ -58,4 +134,23 @@ export {
   Group,
   GroupParticipant,
   GroupJoinRequest,
+  Website,
+  ApiKey,
+  ApiUsage,
+  MessageLog,
+  Contact,
+  ContactLabel,
+  AutoReplyRule,
+  ProductCatalog,
+  CommerceSettings,
+  Order,
+  Product,
+  MarketingTemplate,
+  MarketingCampaign,
+  Account,
+  AccountUser,
+  Permission,
+  RolePermission,
+  AuditLog,
+  ConversationalComponent,
 };

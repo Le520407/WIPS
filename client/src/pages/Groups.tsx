@@ -1,5 +1,7 @@
-import { useState, useEffect } from 'react';
-import { api } from '../services/api';
+import { useState, useEffect, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { groupsService } from '../services/api';
+import CreateGroupModal from '../components/CreateGroupModal';
 
 interface Group {
   id: string;
@@ -15,71 +17,67 @@ interface Group {
 }
 
 export default function Groups() {
+  const navigate = useNavigate();
   const [groups, setGroups] = useState<Group[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [phoneNumberId, setPhoneNumberId] = useState(
     localStorage.getItem('phoneNumberId') || ''
   );
-  const [newGroup, setNewGroup] = useState({
-    subject: '',
-    description: '',
-    joinApprovalMode: 'auto_approve' as 'auto_approve' | 'approval_required',
-  });
 
-  useEffect(() => {
-    fetchGroups();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [phoneNumberId]);
-
-  const fetchGroups = async () => {
-    if (!phoneNumberId) {
+  const fetchGroups = useCallback(async () => {
+    const currentPhoneNumberId = localStorage.getItem('phoneNumberId') || '';
+    if (!currentPhoneNumberId) {
       setLoading(false);
       return;
     }
     try {
       setLoading(true);
-      const response = await api.get('/groups', {
-        params: { phoneNumberId },
-      });
-      setGroups(response.data.groups || []);
+      const response = await groupsService.getGroups(currentPhoneNumberId);
+      setGroups(response.groups || []);
     } catch (error) {
       console.error('Error fetching groups:', error);
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    fetchGroups();
+  }, [fetchGroups]);
 
   const handlePhoneNumberIdChange = (value: string) => {
     setPhoneNumberId(value);
     localStorage.setItem('phoneNumberId', value);
   };
 
-  const handleCreateGroup = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!phoneNumberId) {
-      alert('Please enter your Phone Number ID first');
-      return;
-    }
+  const handleCreateGroup = useCallback(async (
+    subject: string,
+    description: string,
+    _joinApprovalMode: 'auto_approve' | 'approval_required'
+  ) => {
     try {
-      await api.post('/groups', {
-        ...newGroup,
-        phoneNumberId,
-      });
-      setShowCreateModal(false);
-      setNewGroup({ subject: '', description: '', joinApprovalMode: 'auto_approve' });
+      const currentPhoneNumberId = localStorage.getItem('phoneNumberId') || phoneNumberId;
+      await groupsService.createGroup(
+        subject,
+        description || undefined,
+        currentPhoneNumberId
+      );
+      alert('Group created successfully! The invite link will be received via webhook.');
       fetchGroups();
     } catch (error: any) {
       console.error('Error creating group:', error);
       alert(error.response?.data?.error || 'Failed to create group');
+      throw error; // Re-throw to let modal handle it
     }
-  };
+  }, [fetchGroups, phoneNumberId]);
 
   const handleDeleteGroup = async (groupId: string) => {
     if (!confirm('Are you sure you want to delete this group?')) return;
     
     try {
-      await api.delete(`/groups/${groupId}`);
+      await groupsService.deleteGroup(groupId);
+      alert('Group deleted successfully!');
       fetchGroups();
     } catch (error: any) {
       console.error('Error deleting group:', error);
@@ -130,7 +128,13 @@ export default function Groups() {
           value={phoneNumberId}
           onChange={(e) => handlePhoneNumberIdChange(e.target.value)}
           onBlur={fetchGroups}
-          className="w-full border border-gray-300 rounded-lg px-3 py-2"
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') {
+              e.preventDefault();
+              fetchGroups();
+            }
+          }}
+          className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           placeholder="Enter your WhatsApp Phone Number ID (e.g., 123456789012345)"
         />
         <p className="text-xs text-gray-600 mt-2">
@@ -145,9 +149,12 @@ export default function Groups() {
       ) : (
         <div className="grid gap-4">
           {groups.map((group) => (
-            <div key={group.id} className="bg-white rounded-lg shadow p-6">
+            <div key={group.id} className="bg-white rounded-lg shadow p-6 hover:shadow-lg transition-shadow">
               <div className="flex justify-between items-start">
-                <div className="flex-1">
+                <div 
+                  className="flex-1 cursor-pointer"
+                  onClick={() => navigate(`/groups/${group.group_id}`)}
+                >
                   <h3 className="text-lg font-semibold text-gray-900">{group.subject}</h3>
                   {group.description && (
                     <p className="text-gray-600 mt-1">{group.description}</p>
@@ -188,85 +195,12 @@ export default function Groups() {
         </div>
       )}
 
-      {showCreateModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-full max-w-md">
-            <h2 className="text-xl font-bold mb-4">Create New Group</h2>
-            <form onSubmit={handleCreateGroup} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Group Subject *
-                </label>
-                <input
-                  type="text"
-                  value={newGroup.subject}
-                  onChange={(e) => setNewGroup({ ...newGroup, subject: e.target.value })}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2"
-                  placeholder="Enter group subject"
-                  maxLength={128}
-                  required
-                />
-                <p className="text-xs text-gray-500 mt-1">Max 128 characters</p>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Description
-                </label>
-                <textarea
-                  value={newGroup.description}
-                  onChange={(e) => setNewGroup({ ...newGroup, description: e.target.value })}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2"
-                  placeholder="Enter group description (optional)"
-                  rows={3}
-                  maxLength={2048}
-                />
-                <p className="text-xs text-gray-500 mt-1">Max 2048 characters</p>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Join Approval Mode
-                </label>
-                <select
-                  value={newGroup.joinApprovalMode}
-                  onChange={(e) =>
-                    setNewGroup({
-                      ...newGroup,
-                      joinApprovalMode: e.target.value as 'auto_approve' | 'approval_required',
-                    })
-                  }
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2"
-                >
-                  <option value="auto_approve">Auto Approve - Users join instantly</option>
-                  <option value="approval_required">Approval Required - Manual approval needed</option>
-                </select>
-              </div>
-
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-sm text-blue-800">
-                <p className="font-medium">📌 Note:</p>
-                <p className="mt-1">The invite link will be received via webhook after group creation.</p>
-              </div>
-
-              <div className="flex gap-3 justify-end">
-                <button
-                  type="button"
-                  onClick={() => setShowCreateModal(false)}
-                  className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
-                >
-                  Create Group
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+      <CreateGroupModal
+        isOpen={showCreateModal}
+        onClose={() => setShowCreateModal(false)}
+        onSubmit={handleCreateGroup}
+        phoneNumberId={phoneNumberId}
+      />
     </div>
   );
 }

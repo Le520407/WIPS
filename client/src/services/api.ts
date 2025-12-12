@@ -226,3 +226,83 @@ export const dashboardService = {
 export { api };
 
 export default api;
+
+export const groupsService = {
+  // 创建群组
+  createGroup: (subject: string, description?: string, phoneNumberId?: string) =>
+    api.post('/groups', { subject, description, phoneNumberId }).then(res => res.data),
+  
+  // 获取群组列表
+  getGroups: (phoneNumberId?: string) =>
+    api.get('/groups', { params: phoneNumberId ? { phoneNumberId } : {} }).then(res => res.data),
+  
+  // 获取群组信息
+  getGroupInfo: (groupId: string) =>
+    api.get(`/groups/${groupId}`).then(res => res.data),
+  
+  // 更新群组设置
+  updateGroup: (groupId: string, settings: { subject?: string; description?: string; icon?: string }) =>
+    api.post(`/groups/${groupId}`, settings).then(res => res.data),
+  
+  // 删除群组
+  deleteGroup: (groupId: string) =>
+    api.delete(`/groups/${groupId}`).then(res => res.data),
+  
+  // 获取邀请链接
+  getInviteLink: (groupId: string) =>
+    api.get(`/groups/${groupId}/invite-link`).then(res => res.data),
+  
+  // 重置邀请链接
+  resetInviteLink: (groupId: string) =>
+    api.post(`/groups/${groupId}/invite-link`).then(res => res.data),
+  
+  // 移除参与者
+  removeParticipants: (groupId: string, phoneNumbers: string[]) =>
+    api.delete(`/groups/${groupId}/participants`, { data: { phoneNumbers } }).then(res => res.data),
+  
+  // 获取加入请求
+  getJoinRequests: (groupId: string) =>
+    api.get(`/groups/${groupId}/join-requests`).then(res => res.data),
+  
+  // 批准加入请求
+  approveJoinRequests: (groupId: string, phoneNumbers: string[]) =>
+    api.post(`/groups/${groupId}/join-requests`, { phoneNumbers }).then(res => res.data),
+  
+  // 拒绝加入请求
+  rejectJoinRequests: (groupId: string, phoneNumbers: string[]) =>
+    api.delete(`/groups/${groupId}/join-requests`, { data: { phoneNumbers } }).then(res => res.data),
+  
+  // 发送群组消息
+  sendGroupMessage: (groupId: string, message: string) =>
+    api.post(`/groups/${groupId}/messages`, { message }).then(res => res.data)
+};
+
+// Website Management API
+export const getWebsites = () => 
+  api.get('/websites').then(res => res.data);
+
+export const getWebsite = (id: string) => 
+  api.get(`/websites/${id}`).then(res => res.data);
+
+export const createWebsite = (data: any) => 
+  api.post('/websites', data).then(res => res.data);
+
+export const updateWebsite = (id: string, data: any) => 
+  api.put(`/websites/${id}`, data).then(res => res.data);
+
+export const deleteWebsite = (id: string) => 
+  api.delete(`/websites/${id}`).then(res => res.data);
+
+// API Key Management
+export const getApiKeys = (websiteId: string) => 
+  api.get(`/websites/${websiteId}/keys`).then(res => res.data);
+
+export const generateApiKey = (websiteId: string, data: any) => 
+  api.post(`/websites/${websiteId}/keys`, data).then(res => res.data);
+
+export const revokeApiKey = (keyId: string) => 
+  api.delete(`/keys/${keyId}`).then(res => res.data);
+
+// Usage Statistics
+export const getUsageStats = (websiteId: string, period?: string) => 
+  api.get(`/websites/${websiteId}/stats`, { params: { period } }).then(res => res.data);
