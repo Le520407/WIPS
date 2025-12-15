@@ -34,7 +34,7 @@ export const useNotifications = (options: UseNotificationsOptions = {}) => {
     }
 
     try {
-      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3002';
+      const apiUrl = import.meta.env.VITE_API_URL || '';
       // EventSource doesn't support custom headers, so pass token as query parameter
       const url = `${apiUrl}/api/notifications/subscribe?token=${encodeURIComponent(token)}`;
       

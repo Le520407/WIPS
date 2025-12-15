@@ -1035,7 +1035,7 @@ const Messages = () => {
             mediaUrl = mediaCache[msg.mediaId];
           } else {
             try {
-              const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3002';
+              const apiUrl = import.meta.env.VITE_API_URL || '';
               const token = localStorage.getItem('token');
               const response = await fetch(`${apiUrl}/api/messages/media/${msg.mediaId}`, {
                 headers: {
@@ -1237,7 +1237,7 @@ const Messages = () => {
               } else {
                 try {
                   // Fetch media through our authenticated proxy
-                  const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3002';
+                  const apiUrl = import.meta.env.VITE_API_URL || '';
                   const token = localStorage.getItem('token');
                   const response = await fetch(`${apiUrl}/api/messages/media/${msg.mediaId}`, {
                     headers: {

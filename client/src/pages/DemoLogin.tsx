@@ -23,7 +23,7 @@ const DemoLogin = () => {
     setLoading(true);
     
     try {
-      const response = await fetch('http://localhost:3002/api/auth/login', {
+      const response = await fetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -56,7 +56,7 @@ const DemoLogin = () => {
     setLoading(true);
     
     try {
-      const response = await fetch('http://localhost:3002/api/auth/test-login', {
+      const response = await fetch('/api/auth/test-login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -117,7 +117,7 @@ const DemoLogin = () => {
 
   const handleEmbeddedSignupCallback = async (authCode: string) => {
     try {
-      const response = await fetch('http://localhost:3002/api/auth/embedded-signup', {
+      const response = await fetch('/api/auth/embedded-signup', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ code: authCode })

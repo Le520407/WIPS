@@ -33,7 +33,7 @@ export default function UsageDashboard() {
   const fetchStats = async () => {
     try {
       setLoading(true);
-      const response = await fetch(`http://localhost:3002/api/stats/overview?days=${timeRange}`);
+      const response = await fetch(`/api/stats/overview?days=${timeRange}`);
       const data = await response.json();
       if (data.success) {
         setOverview(data.data);
@@ -48,7 +48,7 @@ export default function UsageDashboard() {
 
   const fetchRealtimeStats = async () => {
     try {
-      const response = await fetch('http://localhost:3002/api/stats/realtime');
+      const response = await fetch('/api/stats/realtime');
       const data = await response.json();
       if (data.success) {
         setRealtime(data.data);

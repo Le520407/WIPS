@@ -32,7 +32,7 @@ export const useSignaling = (options: UseSignalingOptions) => {
 
   // Connect to signaling server
   useEffect(() => {
-    const serverUrl = import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:3002';
+    const serverUrl = import.meta.env.VITE_API_URL?.replace('/api', '') || '';
     
     const newSocket = io(serverUrl, {
       transports: ['websocket', 'polling'],
