@@ -125,9 +125,11 @@ User.belongsToMany(Account, { through: AccountUser, foreignKey: 'user_id' });
 AccountUser.belongsTo(Account, { foreignKey: 'account_id' });
 AccountUser.belongsTo(User, { foreignKey: 'user_id' });
 
-// Permission associations
-Permission.belongsToMany(RolePermission, { through: 'role_permissions', foreignKey: 'permission_id' });
-RolePermission.belongsTo(Permission, { foreignKey: 'permission_id' });
+// Permission associations (many-to-many through role_permissions junction table)
+// Note: RolePermission is actually an enum-based role system, not a junction table
+// Commenting out incorrect association to prevent SQL errors
+// Permission.belongsToMany(RolePermission, { through: 'role_permissions', foreignKey: 'permission_id' });
+// RolePermission.belongsTo(Permission, { foreignKey: 'permission_id' });
 
 // Audit log associations
 AuditLog.belongsTo(User, { foreignKey: 'user_id' });
