@@ -374,8 +374,8 @@ export const getQualityDashboard = async (req: Request, res: Response) => {
         return callDate >= date && callDate < nextDate;
       });
 
-      const connected = dayCalls.filter(c => c.status === 'ended' || c.status === 'answered').length;
-      const missed = dayCalls.filter(c => c.status === 'missed' || c.status === 'no_answer').length;
+      const connected = dayCalls.filter(c => c.status === 'connected' || c.status === 'ended').length;
+      const missed = dayCalls.filter(c => c.status === 'missed' || c.status === 'failed').length;
 
       callTrends.push({
         date: date.toISOString().split('T')[0],
@@ -403,7 +403,6 @@ export const getQualityDashboard = async (req: Request, res: Response) => {
         from_number: call.from_number,
         to_number: call.to_number,
         status: call.status,
-        direction: call.direction,
         created_at: call.createdAt,
       })),
     });
