@@ -30,6 +30,8 @@ import AccountManagement from './pages/AccountManagement';
 import UserManagement from './pages/UserManagement';
 import AccountSettings from './pages/AccountSettings';
 import ConversationalComponents from './pages/ConversationalComponents';
+import BlockedUsers from './pages/BlockedUsers';
+import AuthenticationTemplates from './pages/AuthenticationTemplates';
 import AuthCallback from './pages/AuthCallback';
 import Layout from './components/Layout';
 import PrivateRoute from './components/PrivateRoute';
@@ -71,6 +73,8 @@ function App() {
             <Route path="commerce" element={<Commerce />} />
             <Route path="marketing" element={<MarketingInfo />} />
             <Route path="conversational-components" element={<ConversationalComponents />} />
+            <Route path="blocked-users" element={<BlockedUsers />} />
+            <Route path="authentication-templates" element={<AuthenticationTemplates />} />
             <Route path="admin/dashboard" element={<AdminDashboard />} />
             <Route path="admin/accounts" element={<AccountManagement />} />
             <Route path="admin/users" element={<UserManagement />} />

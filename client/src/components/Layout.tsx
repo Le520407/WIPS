@@ -10,6 +10,8 @@ const Layout = () => {
   const { logout, user } = useAuth();
   const [callingOpen, setCallingOpen] = useState(true);
   const [templatesOpen, setTemplatesOpen] = useState(false);
+  const [advancedOpen, setAdvancedOpen] = useState(false);
+  const [securityOpen, setSecurityOpen] = useState(false);
   const [resourcesOpen, setResourcesOpen] = useState(false);
 
   const isDemoMode = localStorage.getItem('demo_mode') === 'true';
@@ -36,14 +38,24 @@ const Layout = () => {
     { path: '/quality', icon: Shield, label: 'Quality Monitor' },
   ];
 
-  // Resources section
+  // Advanced Features section
+  const advancedItems = [
+    { path: '/conversational-components', icon: MessageSquare, label: 'Conversational Components' },
+    { path: '/authentication-templates', icon: Shield, label: 'Authentication (OTP)' },
+  ];
+
+  // Security & Privacy section
+  const securityItems = [
+    { path: '/blocked-users', icon: Shield, label: 'Blocked Users' },
+  ];
+
+  // Resources & Tools section
   const resourceItems = [
     { path: '/review-tips', icon: BookOpen, label: 'Review Tips' },
     { path: '/marketing-limits', icon: TrendingUp, label: 'Marketing Limits' },
     { path: '/pacing', icon: TrendingUp, label: 'Pacing' },
     { path: '/template-library', icon: BookOpen, label: 'Library' },
     { path: '/template-comparison', icon: BookOpen, label: 'Comparison' },
-    { path: '/conversational-components', icon: MessageSquare, label: 'Conversational Components' },
   ];
 
   // Settings (always visible at bottom of nav)
@@ -160,7 +172,77 @@ const Layout = () => {
             )}
           </div>
           
-          {/* Resources Section */}
+          {/* Advanced Features Section */}
+          <div className="mt-2">
+            <button
+              onClick={() => setAdvancedOpen(!advancedOpen)}
+              className="w-full flex items-center justify-between px-6 py-3 text-gray-700 hover:bg-green-50 hover:text-green-600 font-medium"
+            >
+              <div className="flex items-center">
+                <MessageSquare className="w-5 h-5 mr-3" />
+                <span>Advanced</span>
+              </div>
+              {advancedOpen ? (
+                <ChevronDown className="w-4 h-4" />
+              ) : (
+                <ChevronRight className="w-4 h-4" />
+              )}
+            </button>
+            
+            {advancedOpen && (
+              <div className="bg-gray-50">
+                {advancedItems.map(item => (
+                  <Link
+                    key={item.path}
+                    to={item.path}
+                    className={`flex items-center px-6 py-2 pl-14 text-sm text-gray-600 hover:bg-green-50 hover:text-green-600 ${
+                      location.pathname === item.path ? 'bg-green-50 text-green-600 border-r-4 border-green-600' : ''
+                    }`}
+                  >
+                    <item.icon className="w-4 h-4 mr-3" />
+                    {item.label}
+                  </Link>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Security & Privacy Section */}
+          <div className="mt-2">
+            <button
+              onClick={() => setSecurityOpen(!securityOpen)}
+              className="w-full flex items-center justify-between px-6 py-3 text-gray-700 hover:bg-green-50 hover:text-green-600 font-medium"
+            >
+              <div className="flex items-center">
+                <Shield className="w-5 h-5 mr-3" />
+                <span>Security</span>
+              </div>
+              {securityOpen ? (
+                <ChevronDown className="w-4 h-4" />
+              ) : (
+                <ChevronRight className="w-4 h-4" />
+              )}
+            </button>
+            
+            {securityOpen && (
+              <div className="bg-gray-50">
+                {securityItems.map(item => (
+                  <Link
+                    key={item.path}
+                    to={item.path}
+                    className={`flex items-center px-6 py-2 pl-14 text-sm text-gray-600 hover:bg-green-50 hover:text-green-600 ${
+                      location.pathname === item.path ? 'bg-green-50 text-green-600 border-r-4 border-green-600' : ''
+                    }`}
+                  >
+                    <item.icon className="w-4 h-4 mr-3" />
+                    {item.label}
+                  </Link>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Resources & Tools Section */}
           <div className="mt-2">
             <button
               onClick={() => setResourcesOpen(!resourcesOpen)}

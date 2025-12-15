@@ -2,15 +2,15 @@ import { Response } from 'express';
 
 interface Client {
   id: string;
-  userId: number;
+  userId: string;
   response: Response;
 }
 
 class NotificationService {
-  private clients: Map<number, Client[]> = new Map();
+  private clients: Map<string, Client[]> = new Map();
 
   // Add a client connection
-  addClient(userId: number, clientId: string, response: Response) {
+  addClient(userId: string, clientId: string, response: Response) {
     const client: Client = { id: clientId, userId, response };
 
     if (!this.clients.has(userId)) {
@@ -49,7 +49,7 @@ class NotificationService {
   }
 
   // Remove a client connection
-  removeClient(userId: number, clientId: string) {
+  removeClient(userId: string, clientId: string) {
     const userClients = this.clients.get(userId);
     if (userClients) {
       const index = userClients.findIndex((c) => c.id === clientId);
@@ -77,7 +77,7 @@ class NotificationService {
   }
 
   // Send notification to all clients of a user
-  sendToUser(userId: number, data: any) {
+  sendToUser(userId: string, data: any) {
     const userClients = this.clients.get(userId);
     if (userClients && userClients.length > 0) {
       console.log(`📤 Sending notification to user ${userId} (${userClients.length} clients)`);
@@ -91,7 +91,7 @@ class NotificationService {
   }
 
   // Send incoming call notification
-  sendIncomingCall(userId: number, callData: any) {
+  sendIncomingCall(userId: string, callData: any) {
     return this.sendToUser(userId, {
       type: 'incoming_call',
       data: callData,
@@ -100,7 +100,7 @@ class NotificationService {
   }
 
   // Send call status update
-  sendCallStatusUpdate(userId: number, callId: number, status: string, details?: any) {
+  sendCallStatusUpdate(userId: string, callId: number, status: string, details?: any) {
     return this.sendToUser(userId, {
       type: 'call_status_update',
       data: {
@@ -113,7 +113,7 @@ class NotificationService {
   }
 
   // Send permission update notification
-  sendPermissionUpdate(userId: number, permissionData: any) {
+  sendPermissionUpdate(userId: string, permissionData: any) {
     return this.sendToUser(userId, {
       type: 'permission_update',
       data: permissionData,
@@ -122,7 +122,7 @@ class NotificationService {
   }
 
   // Send general notification
-  sendNotification(userId: number, type: string, data: any) {
+  sendNotification(userId: string, type: string, data: any) {
     return this.sendToUser(userId, {
       type,
       data,

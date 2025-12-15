@@ -11,6 +11,8 @@ class User extends Model {
   public status!: 'active' | 'suspended' | 'inactive';
   public whatsapp_account_id!: string;
   public access_token!: string;
+  public waba_id?: string;
+  public phone_number_id?: string;
   public last_login?: Date;
   public readonly created_at!: Date;
   public readonly updated_at!: Date;
@@ -56,6 +58,14 @@ User.init(
     },
     access_token: {
       type: DataTypes.TEXT,
+      allowNull: true,
+    },
+    waba_id: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
+    phone_number_id: {
+      type: DataTypes.STRING,
       allowNull: true,
     },
     last_login: {

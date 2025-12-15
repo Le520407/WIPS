@@ -29,6 +29,9 @@ import Permission from './Permission';
 import RolePermission from './RolePermission';
 import AuditLog from './AuditLog';
 import ConversationalComponent from './ConversationalComponent';
+import BlockedUser from './BlockedUser';
+import AuthTemplate from './AuthTemplate';
+import OTPCode from './OTPCode';
 
 // Define associations
 User.hasMany(Message, { foreignKey: 'user_id' });
@@ -106,6 +109,15 @@ MarketingCampaign.belongsTo(User, { foreignKey: 'user_id' });
 User.hasMany(ConversationalComponent, { foreignKey: 'userId' });
 ConversationalComponent.belongsTo(User, { foreignKey: 'userId' });
 
+User.hasMany(BlockedUser, { foreignKey: 'user_id' });
+BlockedUser.belongsTo(User, { foreignKey: 'user_id' });
+
+User.hasMany(AuthTemplate, { foreignKey: 'user_id' });
+AuthTemplate.belongsTo(User, { foreignKey: 'user_id' });
+
+User.hasMany(OTPCode, { foreignKey: 'user_id' });
+OTPCode.belongsTo(User, { foreignKey: 'user_id' });
+
 // Account associations
 Account.belongsToMany(User, { through: AccountUser, foreignKey: 'account_id' });
 User.belongsToMany(Account, { through: AccountUser, foreignKey: 'user_id' });
@@ -153,4 +165,7 @@ export {
   RolePermission,
   AuditLog,
   ConversationalComponent,
+  BlockedUser,
+  AuthTemplate,
+  OTPCode,
 };

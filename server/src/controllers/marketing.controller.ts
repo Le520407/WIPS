@@ -1,4 +1,5 @@
-import { Request, Response } from 'express';
+import { Response } from 'express';
+import { AuthRequest } from '../middleware/auth.middleware';
 import * as marketingService from '../services/marketing.service';
 import MarketingTemplate from '../models/MarketingTemplate';
 import MarketingCampaign from '../models/MarketingCampaign';
@@ -11,7 +12,7 @@ const PHONE_NUMBER_ID = process.env.WHATSAPP_PHONE_NUMBER_ID!;
 /**
  * Create marketing template
  */
-export const createTemplate = async (req: Request, res: Response) => {
+export const createTemplate = async (req: AuthRequest, res: Response) => {
   try {
     const userId = req.user?.id || req.query.userId;
     const {
@@ -74,7 +75,7 @@ export const createTemplate = async (req: Request, res: Response) => {
 /**
  * Get all marketing templates
  */
-export const getTemplates = async (req: Request, res: Response) => {
+export const getTemplates = async (req: AuthRequest, res: Response) => {
   try {
     const userId = req.user?.id || req.query.userId;
 
@@ -99,7 +100,7 @@ export const getTemplates = async (req: Request, res: Response) => {
 /**
  * Sync template Ad IDs from Meta
  */
-export const syncTemplateAdIds = async (req: Request, res: Response) => {
+export const syncTemplateAdIds = async (req: AuthRequest, res: Response) => {
   try {
     const { templateId } = req.params;
 
@@ -141,7 +142,7 @@ export const syncTemplateAdIds = async (req: Request, res: Response) => {
 /**
  * Create marketing campaign
  */
-export const createCampaign = async (req: Request, res: Response) => {
+export const createCampaign = async (req: AuthRequest, res: Response) => {
   try {
     const userId = req.user?.id || req.query.userId;
     const { name, templateId, targetAudience, scheduledAt } = req.body;
@@ -185,7 +186,7 @@ export const createCampaign = async (req: Request, res: Response) => {
 /**
  * Get all campaigns
  */
-export const getCampaigns = async (req: Request, res: Response) => {
+export const getCampaigns = async (req: AuthRequest, res: Response) => {
   try {
     const userId = req.user?.id || req.query.userId;
 
@@ -210,7 +211,7 @@ export const getCampaigns = async (req: Request, res: Response) => {
 /**
  * Send campaign
  */
-export const sendCampaign = async (req: Request, res: Response) => {
+export const sendCampaign = async (req: AuthRequest, res: Response) => {
   try {
     const { campaignId } = req.params;
     const userId = req.user?.id || req.query.userId;
@@ -333,7 +334,7 @@ export const sendCampaign = async (req: Request, res: Response) => {
 /**
  * Get campaign insights
  */
-export const getCampaignInsights = async (req: Request, res: Response) => {
+export const getCampaignInsights = async (req: AuthRequest, res: Response) => {
   try {
     const { campaignId } = req.params;
     const userId = req.user?.id || req.query.userId;
@@ -378,7 +379,7 @@ export const getCampaignInsights = async (req: Request, res: Response) => {
 /**
  * Get benchmark metrics
  */
-export const getBenchmarks = async (req: Request, res: Response) => {
+export const getBenchmarks = async (req: AuthRequest, res: Response) => {
   try {
     const { adGroupId } = req.params;
 
@@ -400,7 +401,7 @@ export const getBenchmarks = async (req: Request, res: Response) => {
 /**
  * Get all campaigns with insights
  */
-export const getCampaignsWithInsights = async (req: Request, res: Response) => {
+export const getCampaignsWithInsights = async (req: AuthRequest, res: Response) => {
   try {
     const userId = req.user?.id || req.query.userId;
 
@@ -452,7 +453,7 @@ export const getCampaignsWithInsights = async (req: Request, res: Response) => {
 /**
  * Check Marketing Messages API onboarding status
  */
-export const checkOnboardingStatus = async (req: Request, res: Response) => {
+export const checkOnboardingStatus = async (req: AuthRequest, res: Response) => {
   try {
     const wabaId = process.env.WHATSAPP_BUSINESS_ACCOUNT_ID;
 

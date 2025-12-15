@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { MessageSquare, Users, FileText, TrendingUp, Phone, PhoneMissed, AlertCircle, CheckCircle, Clock, ArrowRight } from 'lucide-react';
+import { MessageSquare, FileText, TrendingUp, Phone, PhoneMissed, AlertCircle, CheckCircle, Clock, ArrowRight } from 'lucide-react';
 import api from '../services/api';
 
 const Dashboard = () => {
