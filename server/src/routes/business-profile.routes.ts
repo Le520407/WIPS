@@ -5,7 +5,9 @@ import {
   updateBusinessProfileController,
   uploadProfilePictureController,
   deleteProfilePictureController,
-  getBusinessVerticalsController
+  getBusinessVerticalsController,
+  updateDisplayNameController,
+  getDisplayNameStatusController
 } from '../controllers/business-profile.controller';
 
 const router = express.Router();
@@ -25,5 +27,11 @@ router.delete('/picture', deleteProfilePictureController);
 
 // Get available business verticals (categories)
 router.get('/verticals', getBusinessVerticalsController);
+
+// Update display name
+router.post('/display-name', updateDisplayNameController);
+
+// Get display name status
+router.get('/display-name/status', getDisplayNameStatusController);
 
 export default router;

@@ -457,3 +457,64 @@ export const preAcceptCall = async (req: AuthRequest, res: Response) => {
     });
   }
 };
+
+// Mark missed calls as viewed
+export const markCallsAsViewed = async (req: AuthRequest, res: Response) => {
+  try {
+    const { call_ids } = req.body;
+    
+    if (!call_ids || !Array.isArray(call_ids)) {
+      return res.status(400).json({ error: 'call_ids array is required' });
+    }
+    
+    console.log('👁️  Marking calls as viewed:', call_ids);
+    
+    // Update all specified calls
+    const [updatedCount] = await Call.update(
+      { viewed_at: new Date() },
+      {
+        where: {
+          id: call_ids,
+          user_id: req.user!.id,
+          status: 'missed',
+          viewed_at: null, // Only update if not already viewed
+        },
+      }
+    );
+    
+    console.log(`✅ Marked ${updatedCount} calls as viewed`);
+    
+    res.json({
+      success: true,
+      message: `Marked ${updatedCount} calls as viewed`,
+      updated_count: updatedCount,
+    });
+  } catch (error: any) {
+    console.error('Mark calls as viewed error:', error);
+    res.status(500).json({
+      error: 'Failed to mark calls as viewed',
+      details: error.message,
+    });
+  }
+};
+
+// Get unviewed missed calls count
+export const getUnviewedMissedCallsCount = async (req: AuthRequest, res: Response) => {
+  try {
+    const count = await Call.count({
+      where: {
+        user_id: req.user!.id,
+        status: 'missed',
+        viewed_at: null,
+      },
+    });
+    
+    res.json({ count });
+  } catch (error: any) {
+    console.error('Get unviewed missed calls count error:', error);
+    res.status(500).json({
+      error: 'Failed to get unviewed missed calls count',
+      details: error.message,
+    });
+  }
+};

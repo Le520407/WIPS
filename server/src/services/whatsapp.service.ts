@@ -674,15 +674,11 @@ export const sendContact = async (
 export const sendReaction = async (
   to: string,
   messageId: string,
-  emoji: string
+  emoji: string = ''
 ) => {
   try {
-    // Validate emoji (WhatsApp supports standard Unicode emojis)
-    if (!emoji || emoji.trim().length === 0) {
-      throw new Error('Emoji is required');
-    }
-
-    // To remove a reaction, send an empty emoji
+    // To remove a reaction, send an empty emoji string
+    // If emoji is provided, it will add/update the reaction
     const messageBody = {
       messaging_product: 'whatsapp',
       recipient_type: 'individual',
@@ -690,7 +686,7 @@ export const sendReaction = async (
       type: 'reaction',
       reaction: {
         message_id: messageId,
-        emoji: emoji
+        emoji: emoji // Empty string removes the reaction
       }
     };
 
@@ -1661,6 +1657,147 @@ export const deleteMessage = async (messageId: string) => {
     return response.data;
   } catch (error: any) {
     console.error('❌ Delete message error:', error.response?.data || error.message);
+    throw error;
+  }
+};
+
+/**
+ * Send Media Carousel Message
+ * Sends a horizontally scrollable carousel with image/video cards and CTA buttons
+ */
+export const sendMediaCarousel = async (
+  to: string,
+  bodyText: string,
+  cards: Array<{
+    cardIndex: number;
+    headerType: 'image' | 'video';
+    mediaLink: string;
+    bodyText?: string;
+    buttonText: string;
+    buttonUrl: string;
+  }>
+): Promise<any> => {
+  try {
+    // Validate cards
+    if (!cards || cards.length < 2 || cards.length > 10) {
+      throw new Error('Media carousel must have between 2 and 10 cards');
+    }
+
+    // Validate all cards have the same header type
+    const firstHeaderType = cards[0].headerType;
+    if (!cards.every(card => card.headerType === firstHeaderType)) {
+      throw new Error('All cards must have the same header type (image or video)');
+    }
+
+    // Build cards array
+    const formattedCards = cards.map((card, index) => ({
+      card_index: card.cardIndex !== undefined ? card.cardIndex : index,
+      type: 'cta_url',
+      header: {
+        type: card.headerType,
+        [card.headerType]: {
+          link: card.mediaLink
+        }
+      },
+      body: card.bodyText ? {
+        text: card.bodyText.substring(0, 160) // Max 160 chars
+      } : undefined,
+      action: {
+        name: 'cta_url',
+        parameters: {
+          display_text: card.buttonText.substring(0, 20), // Max 20 chars
+          url: card.buttonUrl
+        }
+      }
+    }));
+
+    const payload = {
+      messaging_product: 'whatsapp',
+      recipient_type: 'individual',
+      to: to,
+      type: 'interactive',
+      interactive: {
+        type: 'carousel',
+        body: {
+          text: bodyText.substring(0, 1024) // Max 1024 chars
+        },
+        action: {
+          cards: formattedCards
+        }
+      }
+    };
+
+    const url = `${WHATSAPP_API_URL}/${API_VERSION}/${PHONE_NUMBER_ID}/messages`;
+    const response = await axios.post(url, payload, {
+      headers: {
+        'Authorization': `Bearer ${ACCESS_TOKEN}`,
+        'Content-Type': 'application/json'
+      }
+    });
+
+    return response.data;
+  } catch (error: any) {
+    console.error('Error sending media carousel:', error.response?.data || error.message);
+    throw error;
+  }
+};
+
+/**
+ * Send Product Carousel Message
+ * Sends a horizontally scrollable carousel with product cards from catalog
+ */
+export const sendProductCarousel = async (
+  to: string,
+  bodyText: string,
+  catalogId: string,
+  products: Array<{
+    cardIndex: number;
+    productRetailerId: string;
+  }>
+): Promise<any> => {
+  try {
+    // Validate products
+    if (!products || products.length < 2 || products.length > 10) {
+      throw new Error('Product carousel must have between 2 and 10 products');
+    }
+
+    // Build cards array
+    const formattedCards = products.map((product, index) => ({
+      card_index: product.cardIndex !== undefined ? product.cardIndex : index,
+      type: 'product',
+      action: {
+        product_retailer_id: product.productRetailerId,
+        catalog_id: catalogId
+      }
+    }));
+
+    const payload = {
+      messaging_product: 'whatsapp',
+      recipient_type: 'individual',
+      to: to,
+      type: 'interactive',
+      interactive: {
+        type: 'carousel',
+        body: {
+          text: bodyText.substring(0, 1024) // Max 1024 chars
+        },
+        action: {
+          cards: formattedCards
+        }
+      }
+    };
+
+    const url = `${WHATSAPP_API_URL}/${API_VERSION}/${PHONE_NUMBER_ID}/messages`;
+    const response = await axios.post(url, payload, {
+      headers: {
+        'Authorization': `Bearer ${ACCESS_TOKEN}`,
+        'Content-Type': 'application/json'
+      }
+    });
+
+    return response.data;
+  } catch (error: any) {
+    console.error('Error sending product carousel:', error.response?.data || error.message);
     throw error;
   }
 };

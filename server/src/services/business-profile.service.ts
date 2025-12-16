@@ -157,3 +157,106 @@ export const getBusinessVerticals = () => {
     { value: 'OTHER', label: 'Other' },
   ];
 };
+
+/**
+ * Update Display Name
+ * https://developers.facebook.com/docs/whatsapp/cloud-api/phone-numbers#display-name
+ */
+export const updateDisplayName = async (displayName: string) => {
+  try {
+    const response = await axios.post(
+      `${WHATSAPP_API_URL}/${PHONE_NUMBER_ID}`,
+      {
+        display_name: displayName
+      },
+      {
+        headers: {
+          'Authorization': `Bearer ${ACCESS_TOKEN}`,
+          'Content-Type': 'application/json',
+        },
+      }
+    );
+
+    console.log('✅ Display name update requested:', response.data);
+    return response.data;
+  } catch (error: any) {
+    console.error('❌ Update display name error:', error.response?.data || error.message);
+    throw error;
+  }
+};
+
+/**
+ * Get Display Name Status
+ * https://developers.facebook.com/docs/whatsapp/cloud-api/phone-numbers#display-name
+ */
+export const getDisplayNameStatus = async () => {
+  try {
+    const response = await axios.get(
+      `${WHATSAPP_API_URL}/${PHONE_NUMBER_ID}`,
+      {
+        params: {
+          fields: 'display_phone_number,verified_name,name_status,quality_rating'
+        },
+        headers: {
+          'Authorization': `Bearer ${ACCESS_TOKEN}`,
+        },
+      }
+    );
+
+    console.log('✅ Display name status retrieved:', response.data);
+    return response.data;
+  } catch (error: any) {
+    console.error('❌ Get display name status error:', error.response?.data || error.message);
+    throw error;
+  }
+};
+
+/**
+ * Get name status description
+ */
+export const getNameStatusInfo = (status: string) => {
+  switch (status) {
+    case 'APPROVED':
+      return {
+        color: 'green',
+        label: '已批准',
+        description: '显示名称已获批准'
+      };
+    case 'AVAILABLE_WITHOUT_REVIEW':
+      return {
+        color: 'blue',
+        label: '无需审核',
+        description: '显示名称可直接使用'
+      };
+    case 'DECLINED':
+      return {
+        color: 'red',
+        label: '已拒绝',
+        description: '显示名称被拒绝'
+      };
+    case 'EXPIRED':
+      return {
+        color: 'orange',
+        label: '已过期',
+        description: '显示名称已过期'
+      };
+    case 'PENDING_REVIEW':
+      return {
+        color: 'yellow',
+        label: '审核中',
+        description: '显示名称正在审核'
+      };
+    case 'NONE':
+      return {
+        color: 'gray',
+        label: '无',
+        description: '没有显示名称'
+      };
+    default:
+      return {
+        color: 'gray',
+        label: '未知',
+        description: '无法获取名称状态'
+      };
+  }
+};

@@ -46,6 +46,19 @@ export const handleWebhook = async (req: Request, res: Response) => {
         // Handle incoming messages
         if (change.value.messages) {
           for (const message of change.value.messages) {
+            // Handle reaction messages
+            if (message.type === 'reaction') {
+              console.log('\n' + '='.repeat(80));
+              console.log('🔍 FULL REACTION WEBHOOK:');
+              console.log(JSON.stringify(message, null, 2));
+              console.log('Metadata:', JSON.stringify(change.value.metadata, null, 2));
+              console.log('='.repeat(80) + '\n');
+              
+              const { processReactionMessage } = require('../services/webhook.service');
+              await processReactionMessage(message, change.value.metadata);
+              continue;
+            }
+            
             // Handle request_welcome message type (Conversational Components)
             if (message.type === 'request_welcome') {
               console.log('👋 Welcome message request received from:', message.from);

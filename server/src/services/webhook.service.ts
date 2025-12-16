@@ -117,12 +117,33 @@ export const processWebhookMessage = async (message: WhatsAppMessage, metadata: 
     // Normalize phone number (remove + if present)
     const normalizedPhone = message.from.replace(/^\+/, '');
 
-    // Find all users who have this WhatsApp number configured
-    // For now, we'll save to all users (you might want to filter by phone_number_id)
-    const users = await User.findAll();
+    // Find the user who owns this WhatsApp phone number
+    const phoneNumberId = metadata.phone_number_id || metadata.display_phone_number;
+    let usersToSave: any[] = [];
     
-    // Only use the first user to avoid duplicate message issues
-    const usersToSave = users.length > 0 ? [users[0]] : [];
+    if (phoneNumberId) {
+      // Try to find user by phone_number_id
+      const user = await User.findOne({
+        where: { phone_number_id: phoneNumberId }
+      });
+      
+      if (user) {
+        usersToSave = [user];
+        console.log('📱 Message for user:', user.email, '(phone_number_id:', phoneNumberId, ')');
+      } else {
+        console.log('⚠️  No user found for phone_number_id:', phoneNumberId);
+        // Fallback to first user
+        const users = await User.findAll();
+        usersToSave = users.length > 0 ? [users[0]] : [];
+        if (usersToSave.length > 0) {
+          console.log('⚠️  Using fallback user:', usersToSave[0].email);
+        }
+      }
+    } else {
+      console.log('⚠️  No phone_number_id in metadata, using first user');
+      const users = await User.findAll();
+      usersToSave = users.length > 0 ? [users[0]] : [];
+    }
     
     // Save message for each user
     for (const user of usersToSave) {
@@ -238,6 +259,248 @@ export const processWebhookMessage = async (message: WhatsAppMessage, metadata: 
 
   } catch (error) {
     console.error('Process webhook message error:', error);
+  }
+};
+
+export const processReactionMessage = async (message: any, metadata: any) => {
+  try {
+    console.log('\n' + '='.repeat(80));
+    console.log('👍 REACTION MESSAGE RECEIVED');
+    console.log('='.repeat(80));
+    console.log('From:', message.from);
+    console.log('Reaction:', JSON.stringify(message.reaction, null, 2));
+    console.log('Timestamp:', message.timestamp);
+    console.log('Full message:', JSON.stringify(message, null, 2));
+    console.log('='.repeat(80) + '\n');
+
+    if (!message.reaction || !message.reaction.message_id) {
+      console.log('⚠️  Invalid reaction message - missing reaction data');
+      return;
+    }
+
+    const { message_id, emoji } = message.reaction;
+    
+    console.log('🔍 Looking for original message with message_id:', message_id);
+    
+    // Normalize phone number
+    const normalizedPhone = message.from.replace(/^\+/, '');
+
+    // Find the user who owns this WhatsApp phone number
+    const phoneNumberId = metadata.phone_number_id || metadata.display_phone_number;
+    let usersToSave: any[] = [];
+    
+    if (phoneNumberId) {
+      const user = await User.findOne({
+        where: { phone_number_id: phoneNumberId }
+      });
+      
+      if (user) {
+        usersToSave = [user];
+        console.log('📱 Reaction for user:', user.email, '(phone_number_id:', phoneNumberId, ')');
+      } else {
+        console.log('⚠️  No user found for phone_number_id:', phoneNumberId);
+        const users = await User.findAll();
+        usersToSave = users.length > 0 ? [users[0]] : [];
+      }
+    } else {
+      const users = await User.findAll();
+      usersToSave = users.length > 0 ? [users[0]] : [];
+    }
+
+    // Try to find the original message with multiple strategies
+    let originalMessage = await Message.findOne({
+      where: {
+        message_id: message_id
+      }
+    });
+
+    // If not found by message_id, try to find by checking if this is a reaction
+    // to a message sent FROM the phone (customer message) or TO the phone (business message)
+    if (!originalMessage) {
+      console.log('⚠️  Message not found by exact message_id, trying alternative search...');
+      
+      const { Op } = require('sequelize');
+      
+      // Strategy 2: Extract the unique part of the message_id and search for partial match
+      // WhatsApp message IDs have format: wamid.HBg[PHONE_PART]FQIAERgS[UNIQUE_PART]AA==
+      // The UNIQUE_PART is consistent, but PHONE_PART may vary
+      const uniquePartMatch = message_id.match(/FQIAERgS([A-Za-z0-9+/=]+)$/);
+      if (uniquePartMatch) {
+        const uniquePart = uniquePartMatch[1];
+        console.log('🔍 Searching for message with unique part:', uniquePart);
+        
+        // Search for messages where message_id contains this unique part
+        const allMessages = await Message.findAll({
+          where: {
+            [Op.or]: [
+              { from_number: normalizedPhone },
+              { to_number: normalizedPhone }
+            ],
+            type: { [Op.ne]: 'reaction' }
+          },
+          order: [['createdAt', 'DESC']],
+          limit: 50 // Check last 50 messages
+        });
+        
+        // Find message with matching unique part
+        originalMessage = allMessages.find(msg => 
+          msg.message_id && msg.message_id.includes(uniquePart)
+        ) || null;
+        
+        if (originalMessage) {
+          console.log('✅ Found message using unique part matching!');
+          console.log('   Reaction message_id:', message_id);
+          console.log('   Database message_id:', originalMessage.message_id);
+        }
+      }
+      
+      // Strategy 3: If still not found, use most recent message
+      if (!originalMessage) {
+        console.log('⚠️  Unique part matching failed, trying most recent message...');
+        
+        originalMessage = await Message.findOne({
+          where: {
+            [Op.or]: [
+              { from_number: normalizedPhone },
+              { to_number: normalizedPhone }
+            ],
+            type: { [Op.ne]: 'reaction' }
+          },
+          order: [['createdAt', 'DESC']]
+        });
+        
+        if (originalMessage) {
+          console.log('✅ Found message using fallback (most recent message with this phone)');
+        }
+      }
+    }
+
+    if (!originalMessage) {
+      console.log('\n' + '❌'.repeat(40));
+      console.log('⚠️  ORIGINAL MESSAGE NOT FOUND');
+      console.log('❌'.repeat(40));
+      console.log('Searched for message_id:', message_id);
+      console.log('Searched for phone:', normalizedPhone);
+      console.log('\n💡 POSSIBLE REASONS:');
+      console.log('1. The message being reacted to is older than 30 days');
+      console.log('2. The message was sent before the platform was set up');
+      console.log('3. The message was not saved to the database');
+      console.log('4. The message_id format is different than expected');
+      console.log('\n💡 SOLUTION:');
+      console.log('Send a NEW message from the platform or phone, then react to it.');
+      console.log('The reaction should work for newly sent messages.');
+      console.log('❌'.repeat(40) + '\n');
+      
+      // Still save the reaction event for debugging
+      for (const user of usersToSave) {
+        try {
+          await Message.create({
+            user_id: user.id,
+            from_number: normalizedPhone,
+            to_number: metadata.phone_number_id || process.env.WHATSAPP_PHONE_NUMBER_ID || '',
+            content: `Reacted ${emoji || '(removed)'} to unknown message (${message_id})`,
+            type: 'reaction',
+            status: 'received',
+            message_id: message.id,
+            reaction_emoji: emoji || null,
+            reaction_message_id: message_id,
+          });
+          console.log('ℹ️  Reaction event saved (without linking to original message)');
+        } catch (error: any) {
+          console.error('Failed to save reaction event:', error?.message);
+        }
+      }
+      return;
+    }
+
+    console.log('\n' + '✅'.repeat(40));
+    console.log('✅ FOUND ORIGINAL MESSAGE');
+    console.log('✅'.repeat(40));
+    console.log('Database ID:', originalMessage.id);
+    console.log('Message ID:', originalMessage.message_id);
+    console.log('Type:', originalMessage.type);
+    console.log('Content:', originalMessage.content || '(no content)');
+    console.log('From:', originalMessage.from_number);
+    console.log('To:', originalMessage.to_number);
+    console.log('Status:', originalMessage.status);
+    console.log('Created:', originalMessage.createdAt);
+    if (originalMessage.media_url) {
+      console.log('Media URL:', originalMessage.media_url);
+    }
+    if (originalMessage.caption) {
+      console.log('Caption:', originalMessage.caption);
+    }
+    console.log('✅'.repeat(40) + '\n');
+
+    for (const user of usersToSave) {
+      try {
+        // Only process if this message belongs to this user
+        if (originalMessage.user_id !== user.id) {
+          console.log('⚠️  Message belongs to different user, skipping');
+          continue;
+        }
+
+        // Check if emoji is empty (removing reaction)
+        if (!emoji || emoji.trim() === '') {
+          // Remove reaction from the original message
+          await originalMessage.update({
+            reaction_emoji: null,
+            reaction_message_id: null
+          });
+          console.log('\n🗑️  REACTION REMOVED');
+          console.log('   Message ID:', message_id);
+          console.log('   User:', user.email);
+        } else {
+          // Update the original message with the reaction
+          await originalMessage.update({
+            reaction_emoji: emoji,
+            reaction_message_id: message.id
+          });
+          console.log('\n🎉 REACTION ADDED SUCCESSFULLY');
+          console.log('   Reaction Message ID:', message.id);
+          console.log('   Original Message ID:', message_id);
+          console.log('   Emoji:', emoji);
+          console.log('   User:', user.email);
+          console.log('   📝 Reacted to:', originalMessage.type === 'text' ? originalMessage.content : `[${originalMessage.type.toUpperCase()}] ${originalMessage.caption || originalMessage.content || ''}`);
+        }
+
+        // Also save the reaction as a separate message for history
+        // Include the original message content so users can see what was reacted to
+        const originalContent = originalMessage.type === 'text' 
+          ? originalMessage.content 
+          : `[${originalMessage.type.toUpperCase()}] ${originalMessage.caption || originalMessage.content || ''}`;
+        
+        await Message.create({
+          user_id: user.id,
+          from_number: normalizedPhone,
+          to_number: metadata.phone_number_id || process.env.WHATSAPP_PHONE_NUMBER_ID || '',
+          content: `Reacted ${emoji || '(removed)'}`,  // Simple content for display
+          type: 'reaction',
+          status: 'received',
+          message_id: message.id,
+          reaction_emoji: emoji || null,
+          reaction_message_id: message_id,
+          context_message_content: originalContent || 'message',  // Store original message content here
+          context_message_type: originalMessage.type,
+          context_message_media_url: originalMessage.media_url || null,
+        });
+
+        console.log('✅ Reaction message saved to database');
+        console.log('\n💡 TIP: Refresh your Messages page to see the reaction badge!\n');
+      } catch (error: any) {
+        console.error('\n❌ FAILED TO PROCESS REACTION');
+        console.error('   User:', user.email);
+        console.error('   Error:', error?.message || error);
+        if (error?.errors) {
+          error.errors.forEach((e: any) => {
+            console.error('   Field:', e.path, 'Error:', e.message);
+          });
+        }
+        console.log('');
+      }
+    }
+  } catch (error) {
+    console.error('Process reaction message error:', error);
   }
 };
 

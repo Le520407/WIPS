@@ -18,8 +18,10 @@ class Message extends Model {
   public context_message_content?: string;
   public context_message_type?: string;
   public context_message_media_url?: string;
-  public readonly created_at!: Date;
-  public readonly updated_at!: Date;
+  public reaction_emoji?: string;
+  public reaction_message_id?: string;
+  public readonly createdAt!: Date;
+  public readonly updatedAt!: Date;
 }
 
 Message.init(
@@ -88,6 +90,14 @@ Message.init(
       type: DataTypes.STRING,
       allowNull: true,
     },
+    reaction_emoji: {
+      type: DataTypes.STRING(10),
+      allowNull: true,
+    },
+    reaction_message_id: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
   },
   {
     sequelize,
@@ -122,6 +132,8 @@ Message.prototype.toJSON = function () {
     contextMessageContent: values.context_message_content,
     contextMessageType: values.context_message_type,
     contextMessageMediaUrl: values.context_message_media_url,
+    reactionEmoji: values.reaction_emoji,
+    reactionMessageId: values.reaction_message_id,
     createdAt: values.createdAt,
     updatedAt: values.updatedAt,
   };

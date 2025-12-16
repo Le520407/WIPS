@@ -96,3 +96,51 @@ export const getBusinessVerticalsController = async (req: AuthRequest, res: Resp
     res.status(500).json({ error: 'Failed to get business verticals' });
   }
 };
+
+export const updateDisplayNameController = async (req: AuthRequest, res: Response) => {
+  try {
+    const { display_name } = req.body;
+
+    if (!display_name) {
+      return res.status(400).json({ error: 'Display name is required' });
+    }
+
+    // Validate display name length (3-100 characters)
+    if (display_name.length < 3 || display_name.length > 100) {
+      return res.status(400).json({ error: 'Display name must be between 3 and 100 characters' });
+    }
+
+    const { updateDisplayName } = require('../services/business-profile.service');
+    const result = await updateDisplayName(display_name);
+    
+    res.json({ success: true, result });
+  } catch (error: any) {
+    console.error('Update display name error:', error);
+    res.status(error.response?.status || 500).json({
+      error: error.response?.data?.error?.message || error.message || 'Failed to update display name'
+    });
+  }
+};
+
+export const getDisplayNameStatusController = async (req: AuthRequest, res: Response) => {
+  try {
+    const { getDisplayNameStatus, getNameStatusInfo } = require('../services/business-profile.service');
+    const status = await getDisplayNameStatus();
+    
+    // Add status info
+    const nameStatusInfo = status.name_status ? getNameStatusInfo(status.name_status) : null;
+    
+    res.json({
+      success: true,
+      data: {
+        ...status,
+        name_status_info: nameStatusInfo
+      }
+    });
+  } catch (error: any) {
+    console.error('Get display name status error:', error);
+    res.status(error.response?.status || 500).json({
+      error: error.response?.data?.error?.message || error.message || 'Failed to get display name status'
+    });
+  }
+};

@@ -25,8 +25,15 @@ interface WebhookPayload {
 class WebhookDistributorService {
   /**
    * 分发 webhook 到对应的网站
+   * TEMPORARILY DISABLED - 暂时禁用
    */
   async distributeWebhook(payload: WebhookPayload): Promise<void> {
+    // Webhook distribution is temporarily disabled
+    // 暂时禁用 webhook 转发功能
+    console.log('⏸️  Webhook distribution is disabled');
+    return;
+    
+    /* DISABLED CODE - 已禁用的代码
     try {
       const phoneNumberId = payload.entry[0]?.changes[0]?.value?.metadata?.phone_number_id;
 
@@ -58,6 +65,7 @@ class WebhookDistributorService {
       console.error('Error distributing webhook:', error);
       throw error;
     }
+    */
   }
 
   /**
@@ -151,26 +159,25 @@ class WebhookDistributorService {
       // 提取消息信息
       const messages = payload.entry[0]?.changes[0]?.value?.messages || [];
       const statuses = payload.entry[0]?.changes[0]?.value?.statuses || [];
+      const metadata = payload.entry[0]?.changes[0]?.value?.metadata;
 
       // 记录每条消息
       for (const message of messages) {
         await MessageLog.create({
           website_id: websiteId,
           message_id: message.id,
+          from: message.from || 'unknown',
+          to: metadata?.phone_number_id || metadata?.display_phone_number || 'unknown',
+          type: message.type || 'unknown',
           direction: 'inbound',
           status: status === 'success' ? 'delivered' : 'failed',
         } as any);
       }
 
-      // 记录状态更新
-      for (const statusUpdate of statuses) {
-        await MessageLog.create({
-          website_id: websiteId,
-          message_id: statusUpdate.id,
-          direction: 'outbound',
-          status: statusUpdate.status,
-        } as any);
-      }
+      // 记录状态更新 - 状态更新不需要记录到 MessageLog
+      // 因为它们不是实际的消息，只是消息状态的更新
+      // 如果需要记录，应该使用不同的表或者使 MessageLog 的某些字段可选
+      
     } catch (error) {
       console.error('Error logging webhook delivery:', error);
     }

@@ -948,3 +948,121 @@ export const deleteMessageController = async (req: AuthRequest, res: Response) =
     });
   }
 };
+
+/**
+ * Send Media Carousel
+ */
+export const sendMediaCarouselController = async (req: AuthRequest, res: Response) => {
+  try {
+    const { to, bodyText, cards } = req.body;
+    
+    if (!to || !bodyText || !cards || !Array.isArray(cards)) {
+      return res.status(400).json({ error: 'Missing required fields (to, bodyText, cards)' });
+    }
+
+    if (cards.length < 2 || cards.length > 10) {
+      return res.status(400).json({ error: 'Cards must be between 2 and 10' });
+    }
+
+    // Normalize phone number
+    const normalizedPhone = to.replace(/^\+/, '');
+
+    const { sendMediaCarousel } = require('../services/whatsapp.service');
+    const result = await sendMediaCarousel(to, bodyText, cards);
+    
+    // Save to database
+    const savedMessage = await Message.create({
+      user_id: req.user!.id,
+      from_number: process.env.WHATSAPP_PHONE_NUMBER_ID || '',
+      to_number: normalizedPhone,
+      content: `[MEDIA CAROUSEL] ${bodyText}`,
+      type: 'interactive',
+      status: 'sent',
+      message_id: result.messages[0].id,
+    });
+
+    // Update conversation
+    const displayMessage = `[MEDIA CAROUSEL] ${bodyText}`;
+    const [conversation, created] = await Conversation.findOrCreate({
+      where: { user_id: req.user!.id, phone_number: normalizedPhone },
+      defaults: {
+        last_message: displayMessage,
+        last_message_time: new Date(),
+      },
+    });
+
+    if (!created) {
+      await conversation.update({
+        last_message: displayMessage,
+        last_message_time: new Date(),
+      });
+    }
+
+    res.json({ success: true, messageId: result.messages[0].id, message: savedMessage });
+  } catch (error: any) {
+    console.error('Send media carousel controller error:', error);
+    res.status(error.response?.status || 500).json({
+      success: false,
+      error: error.message || 'Failed to send media carousel'
+    });
+  }
+};
+
+/**
+ * Send Product Carousel
+ */
+export const sendProductCarouselController = async (req: AuthRequest, res: Response) => {
+  try {
+    const { to, bodyText, catalogId, products } = req.body;
+    
+    if (!to || !bodyText || !catalogId || !products || !Array.isArray(products)) {
+      return res.status(400).json({ error: 'Missing required fields (to, bodyText, catalogId, products)' });
+    }
+
+    if (products.length < 2 || products.length > 10) {
+      return res.status(400).json({ error: 'Products must be between 2 and 10' });
+    }
+
+    // Normalize phone number
+    const normalizedPhone = to.replace(/^\+/, '');
+
+    const { sendProductCarousel } = require('../services/whatsapp.service');
+    const result = await sendProductCarousel(to, bodyText, catalogId, products);
+    
+    // Save to database
+    const savedMessage = await Message.create({
+      user_id: req.user!.id,
+      from_number: process.env.WHATSAPP_PHONE_NUMBER_ID || '',
+      to_number: normalizedPhone,
+      content: `[PRODUCT CAROUSEL] ${bodyText}`,
+      type: 'interactive',
+      status: 'sent',
+      message_id: result.messages[0].id,
+    });
+
+    // Update conversation
+    const displayMessage = `[PRODUCT CAROUSEL] ${bodyText}`;
+    const [conversation, created] = await Conversation.findOrCreate({
+      where: { user_id: req.user!.id, phone_number: normalizedPhone },
+      defaults: {
+        last_message: displayMessage,
+        last_message_time: new Date(),
+      },
+    });
+
+    if (!created) {
+      await conversation.update({
+        last_message: displayMessage,
+        last_message_time: new Date(),
+      });
+    }
+
+    res.json({ success: true, messageId: result.messages[0].id, message: savedMessage });
+  } catch (error: any) {
+    console.error('Send product carousel controller error:', error);
+    res.status(error.response?.status || 500).json({
+      success: false,
+      error: error.message || 'Failed to send product carousel'
+    });
+  }
+};

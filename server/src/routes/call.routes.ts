@@ -9,6 +9,8 @@ import {
   rejectCall,
   terminateCall,
   preAcceptCall,
+  markCallsAsViewed,
+  getUnviewedMissedCallsCount,
 } from '../controllers/call.controller';
 
 const router = Router();
@@ -39,5 +41,11 @@ router.post('/terminate', terminateCall);
 
 // Pre-accept call (for faster connection)
 router.post('/pre-accept', preAcceptCall);
+
+// Mark calls as viewed
+router.post('/mark-viewed', markCallsAsViewed);
+
+// Get unviewed missed calls count
+router.get('/unviewed-count', getUnviewedMissedCallsCount);
 
 export default router;

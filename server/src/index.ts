@@ -33,6 +33,9 @@ import adminRoutes from './routes/admin.routes';
 import conversationalComponentsRoutes from './routes/conversational-components.routes';
 import blockUsersRoutes from './routes/block-users.routes';
 import authTemplateRoutes from './routes/auth-template.routes';
+import phoneNumberRoutes from './routes/phone-number.routes';
+import twoStepVerificationRoutes from './routes/two-step-verification.routes';
+import phoneRegistrationRoutes from './routes/phone-registration.routes';
 import signalingService from './services/signaling.service';
 
 dotenv.config();
@@ -75,6 +78,9 @@ app.use('/api/admin', adminRoutes);
 app.use('/api/conversational-components', conversationalComponentsRoutes);
 app.use('/api/block-users', blockUsersRoutes);
 app.use('/api/auth-templates', authTemplateRoutes);
+app.use('/api/phone-number', phoneNumberRoutes);
+app.use('/api/two-step-verification', twoStepVerificationRoutes);
+app.use('/api/phone-registration', phoneRegistrationRoutes);
 app.use('/api', websiteRoutes);
 app.use('/api/webhooks', webhookConfigRoutes);
 app.use('/webhooks', webhookRoutes);
@@ -114,3 +120,43 @@ async function startServer() {
 }
 
 startServer();
+
+// Graceful shutdown handling
+process.on('SIGINT', async () => {
+  console.log('\n👋 Shutting down gracefully...');
+  
+  try {
+    // Close HTTP server
+    httpServer.close(() => {
+      console.log('✅ HTTP server closed');
+    });
+    
+    // Close database connection
+    await sequelize.close();
+    console.log('✅ Database connection closed');
+    
+    console.log('👋 Goodbye!');
+    process.exit(0);
+  } catch (error) {
+    console.error('❌ Error during shutdown:', error);
+    process.exit(1);
+  }
+});
+
+process.on('SIGTERM', async () => {
+  console.log('\n👋 Received SIGTERM, shutting down...');
+  
+  try {
+    httpServer.close(() => {
+      console.log('✅ HTTP server closed');
+    });
+    
+    await sequelize.close();
+    console.log('✅ Database connection closed');
+    
+    process.exit(0);
+  } catch (error) {
+    console.error('❌ Error during shutdown:', error);
+    process.exit(1);
+  }
+});

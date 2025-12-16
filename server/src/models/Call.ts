@@ -18,6 +18,7 @@ interface CallAttributes {
   callback_sent_at?: Date;
   callback_completed?: boolean; // Whether callback was completed/handled
   callback_completed_at?: Date;
+  viewed_at?: Date; // When the missed call was viewed by user
   createdAt?: Date;
   updatedAt?: Date;
 }
@@ -41,6 +42,7 @@ class Call extends Model<CallAttributes, CallCreationAttributes> implements Call
   public callback_sent_at?: Date;
   public callback_completed?: boolean;
   public callback_completed_at?: Date;
+  public viewed_at?: Date;
   public readonly createdAt!: Date;
   public readonly updatedAt!: Date;
 }
@@ -117,6 +119,10 @@ Call.init(
       defaultValue: false,
     },
     callback_completed_at: {
+      type: DataTypes.DATE,
+      allowNull: true,
+    },
+    viewed_at: {
       type: DataTypes.DATE,
       allowNull: true,
     },
