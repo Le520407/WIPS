@@ -141,22 +141,22 @@ const TemplateLibrary = () => {
       name: 'product_launch_cn',
       category: 'MARKETING',
       language: 'zh_CN',
-      description: '新产品发布通知',
-      content: '您好 {{1}}，\n\n我们很高兴地宣布推出新产品：{{2}}！\n\n立即查看：{{3}}\n\n回复 STOP 取消订阅。',
+      description: 'New Product Launch Notification',
+      content: 'Hello {{1}},\n\nWe are excited to announce our new product: {{2}}!\n\nCheck it out now: {{3}}\n\nReply STOP to unsubscribe.',
       variables: ['customer_name', 'product_name', 'product_url'],
-      useCase: '产品发布和公告',
-      tags: ['产品', '发布', '公告']
+      useCase: 'Product launches and announcements',
+      tags: ['product', 'launch', 'announcement']
     },
     {
       id: 'utility_cn_1',
       name: 'order_confirmation_cn',
       category: 'UTILITY',
       language: 'zh_CN',
-      description: '订单确认通知',
-      content: '您好 {{1}}，\n\n您的订单 #{{2}} 已确认。\n\n总计：¥{{3}}\n预计送达：{{4}}\n\n追踪订单：{{5}}',
+      description: 'Order Confirmation Notification',
+      content: 'Hello {{1}},\n\nYour order #{{2}} has been confirmed.\n\nTotal: ${{3}}\nEstimated delivery: {{4}}\n\nTrack order: {{5}}',
       variables: ['name', 'order_id', 'total', 'delivery_date', 'tracking_url'],
-      useCase: '电商订单确认',
-      tags: ['订单', '确认', '电商']
+      useCase: 'E-commerce order confirmation',
+      tags: ['order', 'confirmation', 'ecommerce']
     }
   ];
 

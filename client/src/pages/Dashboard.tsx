@@ -15,6 +15,7 @@ const Dashboard = () => {
       total: 0,
       today: 0,
       missed: 0,
+      unviewed: 0,
       pickupRate: 0
     },
     templates: {
@@ -33,14 +34,14 @@ const Dashboard = () => {
 
   useEffect(() => {
     fetchDashboardData();
-    // 每30秒刷新一次
+    // Refresh every 30 seconds
     const interval = setInterval(fetchDashboardData, 30000);
     return () => clearInterval(interval);
   }, []);
 
   const fetchDashboardData = async () => {
     try {
-      // 获取消息统计
+      // Get message statistics
       const messagesRes = await api.get('/messages').catch(() => ({ data: { messages: [] } }));
       const messages = messagesRes.data.messages || [];
       
@@ -53,7 +54,7 @@ const Dashboard = () => {
       const messagesWeek = messages.filter((m: any) => new Date(m.timestamp) >= weekAgo).length;
       const messagesMonth = messages.filter((m: any) => new Date(m.timestamp) >= monthAgo).length;
 
-      // 获取通话统计
+      // Get call statistics
       const callsRes = await api.get('/calls').catch(() => ({ data: { calls: [] } }));
       const calls = callsRes.data.calls || [];
       
@@ -61,14 +62,18 @@ const Dashboard = () => {
       const missedCalls = calls.filter((c: any) => c.status === 'missed').length;
       const completedCalls = calls.filter((c: any) => c.status === 'completed').length;
       const pickupRate = calls.length > 0 ? ((completedCalls / calls.length) * 100).toFixed(1) : '0';
+      
+      // Get unviewed missed calls count
+      const unviewedRes = await api.get('/calls/unviewed-count').catch(() => ({ data: { count: 0 } }));
+      const unviewedMissedCalls = unviewedRes.data.count || 0;
 
-      // 获取模板统计
+      // Get template statistics
       const templatesRes = await api.get('/templates').catch(() => ({ data: { templates: [] } }));
       const templates = templatesRes.data.templates || [];
       const activeTemplates = templates.filter((t: any) => t.status === 'APPROVED').length;
       const pausedTemplates = templates.filter((t: any) => t.status === 'PAUSED').length;
 
-      // 获取质量统计
+      // Get quality statistics
       const qualityRes = await api.get('/call/quality').catch(() => ({ data: { qualities: [] } }));
       const qualities = qualityRes.data.qualities || [];
       const excellent = qualities.filter((q: any) => (q.pickup_rate || 0) >= 90).length;
@@ -85,6 +90,7 @@ const Dashboard = () => {
           total: calls.length,
           today: callsToday,
           missed: missedCalls,
+          unviewed: unviewedMissedCalls,
           pickupRate: parseFloat(pickupRate)
         },
         templates: {
@@ -98,7 +104,7 @@ const Dashboard = () => {
         }
       });
 
-      // 最近活动
+      // Recent activities
       const activities = [
         ...messages.slice(0, 3).map((m: any) => ({
           type: 'message',
@@ -145,7 +151,7 @@ const Dashboard = () => {
       icon: PhoneMissed, 
       label: 'Missed Calls', 
       value: stats.calls.missed, 
-      badge: stats.calls.missed > 0,
+      badge: stats.calls.unviewed > 0,
       color: 'bg-red-500',
       link: '/missed-calls'
     },

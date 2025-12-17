@@ -50,7 +50,7 @@ export const VoiceRecorder = ({ onRecordingComplete, onCancel }: VoiceRecorderPr
         
         // Check file size
         if (file.size > 16 * 1024 * 1024) {
-          alert('录音文件过大（超过 16MB）。请录制较短的消息。');
+          alert('Recording file is too large (over 16MB). Please record a shorter message.');
           return;
         }
         
@@ -68,7 +68,7 @@ export const VoiceRecorder = ({ onRecordingComplete, onCancel }: VoiceRecorderPr
       }, 1000);
     } catch (error) {
       console.error('Error starting recording:', error);
-      alert('无法访问麦克风。请确保已授予麦克风权限。');
+      alert('Cannot access microphone. Please ensure microphone permissions are granted.');
     }
   };
 
@@ -107,9 +107,9 @@ export const VoiceRecorder = ({ onRecordingComplete, onCancel }: VoiceRecorderPr
         <svg className="w-16 h-16 mx-auto text-blue-500 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
         </svg>
-        <p className="text-gray-700 font-medium mb-2">上传语音消息</p>
+        <p className="text-gray-700 font-medium mb-2">Upload Voice Message</p>
         <p className="text-sm text-gray-500 mb-6">
-          或者选择已录制好的音频文件
+          Or select a pre-recorded audio file
         </p>
         
         <input
@@ -120,7 +120,7 @@ export const VoiceRecorder = ({ onRecordingComplete, onCancel }: VoiceRecorderPr
             const file = e.target.files?.[0];
             if (file) {
               if (file.size > 16 * 1024 * 1024) {
-                alert('文件过大！最大支持 16 MB');
+                alert('File too large! Maximum 16 MB supported');
                 return;
               }
               console.log('📁 Voice file selected:', {
@@ -137,7 +137,7 @@ export const VoiceRecorder = ({ onRecordingComplete, onCancel }: VoiceRecorderPr
           htmlFor="voice-upload"
           className="inline-block px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 cursor-pointer transition-colors font-medium"
         >
-          📁 选择音频文件
+          📁 Select Audio File
         </label>
         
         <div className="mt-4">
@@ -145,12 +145,12 @@ export const VoiceRecorder = ({ onRecordingComplete, onCancel }: VoiceRecorderPr
             onClick={() => setShowUpload(false)}
             className="text-sm text-blue-600 hover:text-blue-700 underline"
           >
-            ← 返回录音
+            ← Back to Recording
           </button>
         </div>
         
         <div className="mt-6 pt-6 border-t border-gray-200">
-          <p className="text-xs text-gray-600 font-medium mb-2">支持的格式：</p>
+          <p className="text-xs text-gray-600 font-medium mb-2">Supported formats:</p>
           <div className="flex flex-wrap gap-2 justify-center">
             <span className="px-2 py-1 bg-green-100 text-green-700 text-xs rounded">OGG</span>
             <span className="px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded">MP3</span>
@@ -169,7 +169,7 @@ export const VoiceRecorder = ({ onRecordingComplete, onCancel }: VoiceRecorderPr
         <svg className="w-16 h-16 mx-auto text-red-500 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
         </svg>
-        <p className="text-gray-600 mb-4">录制语音消息</p>
+        <p className="text-gray-600 mb-4">Record Voice Message</p>
         <button
           onClick={startRecording}
           className="px-6 py-3 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors flex items-center gap-2 mx-auto"
@@ -177,10 +177,10 @@ export const VoiceRecorder = ({ onRecordingComplete, onCancel }: VoiceRecorderPr
           <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
             <circle cx="10" cy="10" r="8" />
           </svg>
-          开始录音
+          Start Recording
         </button>
         <p className="text-xs text-gray-400 mt-3">
-          录音将在服务器自动转换为 WhatsApp 兼容格式
+          Recording will be automatically converted to WhatsApp-compatible format on the server
         </p>
         
         <div className="mt-6 pt-6 border-t border-gray-200">
@@ -188,7 +188,7 @@ export const VoiceRecorder = ({ onRecordingComplete, onCancel }: VoiceRecorderPr
             onClick={() => setShowUpload(true)}
             className="text-sm text-blue-600 hover:text-blue-700 underline"
           >
-            或者上传音频文件 →
+            Or upload audio file →
           </button>
         </div>
       </div>
@@ -204,13 +204,13 @@ export const VoiceRecorder = ({ onRecordingComplete, onCancel }: VoiceRecorderPr
         </svg>
       </div>
       <p className="text-2xl font-mono text-red-600 mb-4">{formatTime(recordingTime)}</p>
-      <p className="text-gray-600 mb-4">正在录音...</p>
+      <p className="text-gray-600 mb-4">Recording...</p>
       <div className="flex gap-3 justify-center">
         <button
           onClick={cancelRecording}
           className="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600"
         >
-          取消
+          Cancel
         </button>
         <button
           onClick={stopRecording}
@@ -219,7 +219,7 @@ export const VoiceRecorder = ({ onRecordingComplete, onCancel }: VoiceRecorderPr
           <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
             <rect x="6" y="6" width="8" height="8" />
           </svg>
-          完成
+          Done
         </button>
       </div>
     </div>

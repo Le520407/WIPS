@@ -71,7 +71,7 @@ const Templates = () => {
           language: 'zh_CN',
           category: 'MARKETING',
           status: 'APPROVED',
-          body: '限时优惠！立即购买享受8折优惠。'
+          body: 'Limited time offer! Buy now and enjoy 20% off.'
         }
       ] as any);
     } else {

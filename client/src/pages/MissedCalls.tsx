@@ -41,6 +41,27 @@ const MissedCalls: React.FC = () => {
     fetchMissedCalls();
   }, [showUnreadOnly]);
 
+  // Mark all unviewed missed calls as viewed when page loads
+  useEffect(() => {
+    const markAsViewed = async () => {
+      try {
+        // Get all unviewed missed calls
+        const unviewedCalls = missedCalls.filter(call => !call.callback_completed);
+        if (unviewedCalls.length > 0) {
+          const callIds = unviewedCalls.map(call => call.id);
+          await api.post('/calls/mark-viewed', { call_ids: callIds });
+          console.log('✅ Marked calls as viewed:', callIds.length);
+        }
+      } catch (err) {
+        console.error('Failed to mark calls as viewed:', err);
+      }
+    };
+
+    if (missedCalls.length > 0) {
+      markAsViewed();
+    }
+  }, [missedCalls.length]); // Only run when missedCalls changes
+
   const fetchMissedCalls = async () => {
     try {
       setLoading(true);

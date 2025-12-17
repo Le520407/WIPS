@@ -26,7 +26,7 @@ export default function UsageDashboard() {
 
   useEffect(() => {
     fetchStats();
-    const interval = setInterval(fetchRealtimeStats, 30000); // 每30秒更新
+    const interval = setInterval(fetchRealtimeStats, 30000); // Update every 30 seconds
     return () => clearInterval(interval);
   }, [timeRange]);
 

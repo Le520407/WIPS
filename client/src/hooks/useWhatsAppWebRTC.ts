@@ -32,14 +32,14 @@ export const useWhatsAppWebRTC = ({ callId, onConnected, onDisconnected, onError
     try {
       console.log('🎤 Requesting microphone access...');
       
-      // 增强的音频约束，强化回声消除
+      // Enhanced audio constraints with stronger echo cancellation
       const audioConstraints: MediaTrackConstraints = {
-        // 标准约束
+        // Standard constraints
         echoCancellation: { ideal: true },
         noiseSuppression: { ideal: true },
         autoGainControl: { ideal: true },
         
-        // Chrome/Edge 特定约束（向后兼容）
+        // Chrome/Edge specific constraints (backward compatible)
         // @ts-ignore - Chrome specific constraints
         googEchoCancellation: { ideal: true },
         // @ts-ignore
@@ -62,7 +62,7 @@ export const useWhatsAppWebRTC = ({ callId, onConnected, onDisconnected, onError
       localStreamRef.current = stream;
       console.log('✅ Got local stream:', stream.id);
       
-      // 验证回声消除是否启用
+      // Verify echo cancellation is enabled
       const track = stream.getAudioTracks()[0];
       const settings = track.getSettings();
       console.log('🔊 Audio settings:', {
@@ -72,10 +72,10 @@ export const useWhatsAppWebRTC = ({ callId, onConnected, onDisconnected, onError
       });
       
       if (!settings.echoCancellation) {
-        console.warn('⚠️ 警告: 回声消除未启用!');
-        console.warn('💡 建议使用耳机');
+        console.warn('⚠️ Warning: Echo cancellation not enabled!');
+        console.warn('💡 Recommend using headphones');
       } else {
-        console.log('✅ 回声消除已启用');
+        console.log('✅ Echo cancellation enabled');
       }
       
       console.log('✅ Local audio tracks:', stream.getAudioTracks().map(t => ({
@@ -354,16 +354,16 @@ export const useWhatsAppWebRTC = ({ callId, onConnected, onDisconnected, onError
                         const bytesDiff = report2.bytesSent - report.bytesSent;
                         
                         if (packetsDiff > 0) {
-                          console.log('✅ 正在发送音频数据包!', {
+                          console.log('✅ Sending audio packets!', {
                             packetsIncrease: packetsDiff,
                             bytesIncrease: bytesDiff
                           });
                         } else {
-                          console.error('❌ 警告: 没有发送音频数据包!', {
+                          console.error('❌ Warning: No audio packets being sent!', {
                             packetsSent: report2.packetsSent,
                             bytesSent: report2.bytesSent
                           });
-                          console.error('❌ 这可能导致 WhatsApp 断开连接!');
+                          console.error('❌ This may cause WhatsApp to disconnect!');
                         }
                       }
                     });

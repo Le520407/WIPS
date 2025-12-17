@@ -24,18 +24,18 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   useEffect(() => {
     if (token) {
-      // 检查是否是 demo 模式
+      // Check if demo mode
       const isDemoMode = localStorage.getItem('demo_mode') === 'true';
       
       if (isDemoMode) {
-        // Demo 模式：从 localStorage 获取用户信息
+        // Demo mode: Get user info from localStorage
         const demoUser = localStorage.getItem('demo_user');
         if (demoUser) {
           setUser(JSON.parse(demoUser));
         }
         setIsLoading(false);
       } else {
-        // 正常模式：从 API 获取用户信息
+        // Normal mode: Get user info from API
         authService.getCurrentUser()
           .then((data: any) => setUser(data.user))
           .catch(() => {

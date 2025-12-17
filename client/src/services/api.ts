@@ -17,14 +17,14 @@ api.interceptors.request.use(config => {
   return config;
 });
 
-// Demo 模式拦截器
+// Demo mode interceptor
 api.interceptors.response.use(
   response => response,
   error => {
     const isDemoMode = localStorage.getItem('demo_mode') === 'true';
     
     if (isDemoMode && error.response?.status === 401) {
-      // Demo 模式下，返回模拟数据而不是错误
+      // In demo mode, return mock data instead of error
       console.log('Demo mode: Intercepted API error', error.config.url);
       return Promise.resolve({ data: getDemoData(error.config.url) });
     }
@@ -33,7 +33,7 @@ api.interceptors.response.use(
   }
 );
 
-// 获取模拟数据
+// Get mock data
 function getDemoData(url: string) {
   if (url?.includes('/dashboard/stats')) {
     return {
@@ -54,21 +54,21 @@ function getDemoData(url: string) {
         {
           id: '1',
           phoneNumber: '+86 138 0013 8000',
-          lastMessage: '你好，我想咨询一下产品信息',
+          lastMessage: 'Hello, I would like to inquire about product information',
           lastMessageTime: new Date().toISOString(),
           unreadCount: 2
         },
         {
           id: '2',
           phoneNumber: '+86 139 0013 9000',
-          lastMessage: '订单已收到，谢谢！',
+          lastMessage: 'Order received, thank you!',
           lastMessageTime: new Date(Date.now() - 3600000).toISOString(),
           unreadCount: 0
         },
         {
           id: '3',
           phoneNumber: '+86 150 0015 0000',
-          lastMessage: '什么时候可以发货？',
+          lastMessage: 'When can it be shipped?',
           lastMessageTime: new Date(Date.now() - 7200000).toISOString(),
           unreadCount: 1
         }
@@ -82,31 +82,31 @@ function getDemoData(url: string) {
         {
           id: '1',
           name: 'welcome_message',
-          language: 'zh_CN',
+          language: 'en_US',
           category: 'MARKETING',
           status: 'APPROVED',
           components: [
-            { type: 'BODY', text: '欢迎使用我们的服务！' }
+            { type: 'BODY', text: 'Welcome to our service!' }
           ]
         },
         {
           id: '2',
           name: 'order_confirmation',
-          language: 'zh_CN',
+          language: 'en_US',
           category: 'UTILITY',
           status: 'APPROVED',
           components: [
-            { type: 'BODY', text: '您的订单已确认，订单号：{{1}}' }
+            { type: 'BODY', text: 'Your order has been confirmed, order number: {{1}}' }
           ]
         },
         {
           id: '3',
           name: 'shipping_update',
-          language: 'zh_CN',
+          language: 'en_US',
           category: 'UTILITY',
           status: 'PENDING',
           components: [
-            { type: 'BODY', text: '您的包裹已发货，快递单号：{{1}}' }
+            { type: 'BODY', text: 'Your package has been shipped, tracking number: {{1}}' }
           ]
         }
       ]
@@ -173,7 +173,11 @@ export const messageService = {
   requestLocation: (to: string, bodyText: string) =>
     api.post('/messages/request-location', { to, bodyText }).then(res => res.data),
   sendAddress: (to: string, name: string, address: any) =>
-    api.post('/messages/send-address', { to, name, address }).then(res => res.data)
+    api.post('/messages/send-address', { to, name, address }).then(res => res.data),
+  sendMediaCarousel: (to: string, bodyText: string, cards: Array<any>) =>
+    api.post('/messages/send-media-carousel', { to, bodyText, cards }).then(res => res.data),
+  sendProductCarousel: (to: string, bodyText: string, catalogId: string, products: Array<any>) =>
+    api.post('/messages/send-product-carousel', { to, bodyText, catalogId, products }).then(res => res.data)
 };
 
 export const templateService = {
@@ -228,51 +232,51 @@ export { api };
 export default api;
 
 export const groupsService = {
-  // 创建群组
+  // Create group
   createGroup: (subject: string, description?: string, phoneNumberId?: string) =>
     api.post('/groups', { subject, description, phoneNumberId }).then(res => res.data),
   
-  // 获取群组列表
+  // Get groups list
   getGroups: (phoneNumberId?: string) =>
     api.get('/groups', { params: phoneNumberId ? { phoneNumberId } : {} }).then(res => res.data),
   
-  // 获取群组信息
+  // Get group info
   getGroupInfo: (groupId: string) =>
     api.get(`/groups/${groupId}`).then(res => res.data),
   
-  // 更新群组设置
+  // Update group settings
   updateGroup: (groupId: string, settings: { subject?: string; description?: string; icon?: string }) =>
     api.post(`/groups/${groupId}`, settings).then(res => res.data),
   
-  // 删除群组
+  // Delete group
   deleteGroup: (groupId: string) =>
     api.delete(`/groups/${groupId}`).then(res => res.data),
   
-  // 获取邀请链接
+  // Get invite link
   getInviteLink: (groupId: string) =>
     api.get(`/groups/${groupId}/invite-link`).then(res => res.data),
   
-  // 重置邀请链接
+  // Reset invite link
   resetInviteLink: (groupId: string) =>
     api.post(`/groups/${groupId}/invite-link`).then(res => res.data),
   
-  // 移除参与者
+  // Remove participants
   removeParticipants: (groupId: string, phoneNumbers: string[]) =>
     api.delete(`/groups/${groupId}/participants`, { data: { phoneNumbers } }).then(res => res.data),
   
-  // 获取加入请求
+  // Get join requests
   getJoinRequests: (groupId: string) =>
     api.get(`/groups/${groupId}/join-requests`).then(res => res.data),
   
-  // 批准加入请求
+  // Approve join requests
   approveJoinRequests: (groupId: string, phoneNumbers: string[]) =>
     api.post(`/groups/${groupId}/join-requests`, { phoneNumbers }).then(res => res.data),
   
-  // 拒绝加入请求
+  // Reject join requests
   rejectJoinRequests: (groupId: string, phoneNumbers: string[]) =>
     api.delete(`/groups/${groupId}/join-requests`, { data: { phoneNumbers } }).then(res => res.data),
   
-  // 发送群组消息
+  // Send group message
   sendGroupMessage: (groupId: string, message: string) =>
     api.post(`/groups/${groupId}/messages`, { message }).then(res => res.data)
 };

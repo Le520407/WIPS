@@ -3,6 +3,7 @@ import { Send, FileText, MessageSquare, Search, Zap, Plus, X, Check, CheckCheck 
 import { messageService, templateService } from '../services/api';
 import { VoiceRecorder } from '../components/VoiceRecorder';
 import { VoiceMessage } from '../components/VoiceMessage';
+import '../styles/Messages.css';
 
 const Messages = () => {
   const [conversations, setConversations] = useState<any[]>([]);
@@ -12,7 +13,7 @@ const Messages = () => {
   const [selectedConversation, setSelectedConversation] = useState<string | null>(null);
   
   // Template sending
-  const [messageMode, setMessageMode] = useState<'text' | 'template' | 'media' | 'buttons' | 'list' | 'cta' | 'location' | 'contact' | 'sticker' | 'location_request' | 'address'>('text');
+  const [messageMode, setMessageMode] = useState<'text' | 'template' | 'media' | 'buttons' | 'list' | 'cta' | 'location' | 'contact' | 'sticker' | 'location_request' | 'address' | 'media_carousel' | 'product_carousel'>('text');
   const [templates, setTemplates] = useState<any[]>([]);
   const [selectedTemplate, setSelectedTemplate] = useState<any>(null);
   const [templateVariables, setTemplateVariables] = useState<string[]>([]);
@@ -72,6 +73,51 @@ const Messages = () => {
   const [addressCountry, setAddressCountry] = useState('');
   const [addressType, setAddressType] = useState('HOME');
   
+  // Media Carousel
+  const [carouselBodyText, setCarouselBodyText] = useState('');
+  const [carouselCards, setCarouselCards] = useState<Array<{
+    cardIndex: number;
+    headerType: 'image' | 'video';
+    mediaLink: string;
+    bodyText: string;
+    buttonText: string;
+    buttonUrl: string;
+  }>>([
+    {
+      cardIndex: 0,
+      headerType: 'image',
+      mediaLink: '',
+      bodyText: '',
+      buttonText: '',
+      buttonUrl: ''
+    },
+    {
+      cardIndex: 1,
+      headerType: 'image',
+      mediaLink: '',
+      bodyText: '',
+      buttonText: '',
+      buttonUrl: ''
+    }
+  ]);
+  
+  // Product Carousel
+  const [productCarouselBodyText, setProductCarouselBodyText] = useState('');
+  const [catalogId, setCatalogId] = useState('');
+  const [productCards, setProductCards] = useState<Array<{
+    cardIndex: number;
+    productRetailerId: string;
+  }>>([
+    {
+      cardIndex: 0,
+      productRetailerId: ''
+    },
+    {
+      cardIndex: 1,
+      productRetailerId: ''
+    }
+  ]);
+  
   // Media sending
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [filePreview, setFilePreview] = useState<string | null>(null);
@@ -95,6 +141,9 @@ const Messages = () => {
   
   // Emoji picker
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  
+  // Reaction menu
+  const [showReactionMenu, setShowReactionMenu] = useState<string | null>(null);
   
   // Refs for auto-scrolling
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -280,7 +329,7 @@ const Messages = () => {
           language: 'zh_CN',
           category: 'UTILITY',
           status: 'APPROVED',
-          body: '您好 {{1}}！您的订单 #{{2}} 已确认。金额：¥{{3}}。预计送达：{{4}}',
+          body: 'Hello {{1}}! Your order #{{2}} has been confirmed. Amount: ${{3}}. Estimated delivery: {{4}}',
           variableCount: 4
         },
         {
@@ -437,6 +486,66 @@ const Messages = () => {
     setListSections(newSections);
   };
 
+  // Media Carousel handlers
+  const handleAddCarouselCard = () => {
+    if (carouselCards.length < 10) {
+      setCarouselCards([...carouselCards, {
+        cardIndex: carouselCards.length,
+        headerType: carouselCards[0]?.headerType || 'image',
+        mediaLink: '',
+        bodyText: '',
+        buttonText: '',
+        buttonUrl: ''
+      }]);
+    }
+  };
+
+  const handleRemoveCarouselCard = (index: number) => {
+    if (carouselCards.length > 2) {
+      const newCards = carouselCards.filter((_, i) => i !== index);
+      // Re-index cards
+      newCards.forEach((card, i) => card.cardIndex = i);
+      setCarouselCards(newCards);
+    }
+  };
+
+  const handleCarouselCardChange = (index: number, field: string, value: any) => {
+    const newCards = [...carouselCards];
+    (newCards[index] as any)[field] = value;
+    
+    // If changing header type, update all cards to match
+    if (field === 'headerType') {
+      newCards.forEach(card => card.headerType = value);
+    }
+    
+    setCarouselCards(newCards);
+  };
+
+  // Product Carousel handlers
+  const handleAddProductCard = () => {
+    if (productCards.length < 10) {
+      setProductCards([...productCards, {
+        cardIndex: productCards.length,
+        productRetailerId: ''
+      }]);
+    }
+  };
+
+  const handleRemoveProductCard = (index: number) => {
+    if (productCards.length > 2) {
+      const newCards = productCards.filter((_, i) => i !== index);
+      // Re-index cards
+      newCards.forEach((card, i) => card.cardIndex = i);
+      setProductCards(newCards);
+    }
+  };
+
+  const handleProductCardChange = (index: number, value: string) => {
+    const newCards = [...productCards];
+    newCards[index].productRetailerId = value;
+    setProductCards(newCards);
+  };
+
   // Voice recording functions - DISABLED
   // Reason: Browser WebM format not compatible with WhatsApp
   // Solution: Use Audio type with OGG files uploaded via URL or file
@@ -462,7 +571,7 @@ const Messages = () => {
           mimeType = 'audio/webm';
         } else {
           console.error('❌ Browser does not support audio recording!');
-          alert('您的浏览器不支持音频录制功能。');
+          alert('Your browser does not support audio recording.');
           stream.getTracks().forEach(track => track.stop());
           return;
         }
@@ -495,7 +604,7 @@ const Messages = () => {
         
         // Check file size limits
         if (file.size > 16 * 1024 * 1024) {
-          alert('录音文件过大（超过 16MB）。请录制较短的消息。');
+          alert('Recording file is too large (over 16MB). Please record a shorter message.');
           stream.getTracks().forEach(track => track.stop());
           return;
         }
@@ -525,7 +634,7 @@ const Messages = () => {
       (recorder as any).timerId = timer;
     } catch (error) {
       console.error('Error starting recording:', error);
-      alert('无法访问麦克风。请确保已授予麦克风权限。');
+      alert('Cannot access microphone. Please ensure microphone permissions are granted.');
     }
   };
 
@@ -592,6 +701,32 @@ const Messages = () => {
     typingTimeoutRef.current = setTimeout(() => {
       isTypingRef.current = false;
     }, 3000);
+  };
+
+  const handleSendReaction = async (messageId: string, emoji: string) => {
+    try {
+      if (!selectedConversation) return;
+      
+      const conv = conversations.find(c => c.id === selectedConversation);
+      if (!conv) return;
+
+      // Use phoneNumber (camelCase) for demo mode, phone_number (snake_case) for real mode
+      const phoneNumber = conv.phoneNumber || conv.phone_number;
+      if (!phoneNumber) {
+        console.error('No phone number found in conversation:', conv);
+        alert('Failed to send reaction: No phone number found');
+        return;
+      }
+
+      await messageService.sendReaction(phoneNumber, messageId, emoji);
+      setShowReactionMenu(null);
+      
+      // Refresh messages
+      await refreshMessages(conv);
+    } catch (error: any) {
+      console.error('Send reaction error:', error);
+      alert('Failed to send reaction: ' + (error.response?.data?.error || error.message));
+    }
   };
 
   const handleSendMessage = async () => {
@@ -727,7 +862,7 @@ const Messages = () => {
           // Replace template variables
           messageContent = selectedTemplate.body;
           templateVariables.forEach((value, index) => {
-            messageContent = messageContent.replace(`{{${index + 1}}}`, value || `[变量${index + 1}]`);
+            messageContent = messageContent.replace(`{{${index + 1}}}`, value || `[Variable ${index + 1}]`);
           });
         }
         
@@ -887,6 +1022,41 @@ const Messages = () => {
           setAddressZip('');
           setAddressCountry('');
           setAddressType('HOME');
+        } else if (messageMode === 'media_carousel') {
+          await messageService.sendMediaCarousel(recipient, carouselBodyText, carouselCards);
+          setCarouselBodyText('');
+          setCarouselCards([
+            {
+              cardIndex: 0,
+              headerType: 'image',
+              mediaLink: '',
+              bodyText: '',
+              buttonText: '',
+              buttonUrl: ''
+            },
+            {
+              cardIndex: 1,
+              headerType: 'image',
+              mediaLink: '',
+              bodyText: '',
+              buttonText: '',
+              buttonUrl: ''
+            }
+          ]);
+        } else if (messageMode === 'product_carousel') {
+          await messageService.sendProductCarousel(recipient, productCarouselBodyText, catalogId, productCards);
+          setProductCarouselBodyText('');
+          setCatalogId('');
+          setProductCards([
+            {
+              cardIndex: 0,
+              productRetailerId: ''
+            },
+            {
+              cardIndex: 1,
+              productRetailerId: ''
+            }
+          ]);
         } else {
           // Send template message
           const components = [];
@@ -991,7 +1161,7 @@ const Messages = () => {
     // Replace variables with values
     let preview = bodyText;
     templateVariables.forEach((value, index) => {
-      preview = preview.replace(`{{${index + 1}}}`, value || `[变量${index + 1}]`);
+      preview = preview.replace(`{{${index + 1}}}`, value || `[Variable ${index + 1}]`);
     });
     return preview;
   };
@@ -1054,7 +1224,7 @@ const Messages = () => {
           }
         }
         
-        return {
+        const transformed = {
           id: msg.id,
           messageId: msg.messageId, // WhatsApp message ID (wamid.xxx)
           content: msg.content,
@@ -1069,14 +1239,43 @@ const Messages = () => {
           contextMessageId: msg.contextMessageId,
           contextMessageContent: msg.contextMessageContent,
           contextMessageType: msg.contextMessageType,
-          contextMessageMediaUrl: msg.contextMessageMediaUrl
+          contextMessageMediaUrl: msg.contextMessageMediaUrl,
+          reactionEmoji: msg.reactionEmoji,
+          reactionMessageId: msg.reactionMessageId
         };
+        
+        // Debug: Log messages with reactions
+        if (msg.reactionEmoji) {
+          console.log('📨 Message with reaction (refreshMessages):', {
+            id: msg.id,
+            type: msg.type,
+            content: msg.content?.substring(0, 30),
+            reactionEmoji: msg.reactionEmoji,
+            fromAPI: msg.reactionEmoji,
+            afterTransform: transformed.reactionEmoji,
+            willShowBadge: msg.reactionEmoji && msg.type !== 'reaction'
+          });
+        }
+        
+        return transformed;
       }));
       
       console.log('Setting messages:', {
         count: transformedMessages.length,
-        lastMsg: transformedMessages[transformedMessages.length - 1]?.content?.substring(0, 30)
+        lastMsg: transformedMessages[transformedMessages.length - 1]?.content?.substring(0, 30),
+        messagesWithReactions: transformedMessages.filter(m => m.reactionEmoji).length,
+        textMessagesWithReactions: transformedMessages.filter(m => m.reactionEmoji && m.type !== 'reaction').length,
+        reactionMessages: transformedMessages.filter(m => m.type === 'reaction').length
       });
+      
+      // Log last 5 messages for debugging
+      console.log('📋 Last 5 messages:', transformedMessages.slice(-5).map(m => ({
+        id: m.id.substring(0, 8),
+        type: m.type,
+        content: m.content?.substring(0, 20),
+        reactionEmoji: m.reactionEmoji,
+        from: m.from === 'me' ? 'me' : 'customer'
+      })));
       
       // Update messages
       setMessages(transformedMessages);
@@ -1216,16 +1415,10 @@ const Messages = () => {
         .then(async (data: any) => {
           // Transform API messages to match frontend format
           console.log('📊 Received messages from API:', data.messages.length);
+          
           const transformedMessages = await Promise.all(data.messages.map(async (msg: any) => {
             // If fromNumber is our WhatsApp number, it's from us
             const isFromUs = msg.fromNumber === '803320889535856';
-            console.log('Message:', {
-              id: msg.id.substring(0, 8),
-              from: msg.fromNumber,
-              to: msg.toNumber,
-              isFromUs,
-              content: msg.content.substring(0, 20)
-            });
             
             let mediaUrl = msg.mediaUrl;
             
@@ -1272,9 +1465,19 @@ const Messages = () => {
               contextMessageId: msg.contextMessageId,
               contextMessageContent: msg.contextMessageContent,
               contextMessageType: msg.contextMessageType,
-              contextMessageMediaUrl: msg.contextMessageMediaUrl
+              contextMessageMediaUrl: msg.contextMessageMediaUrl,
+              reactionEmoji: msg.reactionEmoji,
+              reactionMessageId: msg.reactionMessageId
             };
           }));
+          
+          // Debug: Check for reaction messages
+          const reactionMessages = transformedMessages.filter((m: any) => m.type === 'reaction');
+          console.log('🎯 Reaction type messages:', reactionMessages.length);
+          if (reactionMessages.length > 0) {
+            console.log('🎯 Sample reaction message:', reactionMessages[0]);
+          }
+          
           setMessages(transformedMessages);
           // Update the last message ID ref
           if (transformedMessages.length > 0) {
@@ -1380,8 +1583,8 @@ const Messages = () => {
               <div
                 key={conv.id}
                 onClick={() => handleSelectConversation(conv)}
-                className={`p-4 border-b hover:bg-gray-50 cursor-pointer ${
-                  selectedConversation === conv.id ? 'bg-green-50' : ''
+                className={`conversation-item ${
+                  selectedConversation === conv.id ? 'active' : ''
                 }`}
               >
                 <div className="flex justify-between items-start">
@@ -1404,7 +1607,7 @@ const Messages = () => {
           <h2 className="text-xl font-semibold">Messages</h2>
         </div>
 
-        <div ref={messagesContainerRef} className="flex-1 overflow-y-auto p-4 bg-gray-50">
+        <div ref={messagesContainerRef} className="messages-container flex-1 overflow-y-auto p-4 bg-gray-50">
           {messages.length === 0 ? (
             <div className="flex items-center justify-center h-full">
               <p className="text-center text-gray-500">Select a conversation or send a new message</p>
@@ -1416,8 +1619,8 @@ const Messages = () => {
                   <div className="flex items-start gap-2">
                     <div className={`max-w-xs lg:max-w-md rounded-lg overflow-hidden ${
                       msg.from === 'me' 
-                        ? 'bg-green-500 text-white' 
-                        : 'bg-white text-gray-800 shadow'
+                        ? 'message-bubble-sent' 
+                        : 'message-bubble-received'
                     }`}>
                     {/* Image Message */}
                     {msg.type === 'image' && msg.mediaUrl && (
@@ -1724,20 +1927,54 @@ const Messages = () => {
                     <div className={`flex items-center justify-between px-4 pb-2 ${
                       msg.content ? '' : 'pt-2'
                     } ${
-                      msg.from === 'me' ? 'text-green-100' : 'text-gray-400'
+                      msg.from === 'me' ? 'text-green-900' : 'text-gray-600'
                     }`}>
-                      <span className="text-xs">
+                      <span className="text-xs font-semibold">
                         {new Date(msg.timestamp).toLocaleTimeString()}
                       </span>
                       {msg.from === 'me' && (
                         <span className="flex items-center ml-2">
-                          {msg.status === 'sent' && <Check className="w-3 h-3" />}
-                          {msg.status === 'delivered' && <CheckCheck className="w-3 h-3" />}
-                          {msg.status === 'read' && <CheckCheck className="w-3 h-3 text-blue-500" />}
+                          {msg.status === 'sent' && <Check className="w-3 h-3 text-green-900" />}
+                          {msg.status === 'delivered' && <CheckCheck className="w-3 h-3 text-green-900" />}
+                          {msg.status === 'read' && <CheckCheck className="w-3 h-3 text-blue-600" />}
                         </span>
                       )}
                     </div>
                   </div>
+                  
+                  {/* Reaction Menu - for received messages only */}
+                  {msg.from !== 'me' && msg.messageId && msg.messageId.startsWith('wamid.') && (
+                    <div className="px-4 pb-2">
+                      {showReactionMenu === msg.messageId ? (
+                        <div className="flex items-center gap-2 bg-gray-50 rounded-lg p-2 animate-fadeIn">
+                          {['👍', '❤️', '😂', '😮', '😢', '🙏', '🎉', '🔥'].map(emoji => (
+                            <button
+                              key={emoji}
+                              onClick={() => handleSendReaction(msg.messageId, emoji)}
+                              className="text-2xl hover:scale-125 transition-transform"
+                              title={`React with ${emoji}`}
+                            >
+                              {emoji}
+                            </button>
+                          ))}
+                          <button
+                            onClick={() => setShowReactionMenu(null)}
+                            className="ml-2 text-gray-500 hover:text-gray-700"
+                          >
+                            <X className="w-4 h-4" />
+                          </button>
+                        </div>
+                      ) : (
+                        <button
+                          onClick={() => setShowReactionMenu(msg.messageId)}
+                          className="text-xs text-gray-500 hover:text-blue-600 flex items-center gap-1 transition-colors"
+                        >
+                          <span>😊</span>
+                          <span>React</span>
+                        </button>
+                      )}
+                    </div>
+                  )}
                     
                   {/* Reply Button - shows on hover, positioned to the right */}
                   {msg.from !== 'me' && msg.messageId && msg.messageId.startsWith('wamid.') && (
@@ -1768,7 +2005,7 @@ const Messages = () => {
               placeholder="Recipient number (e.g., +60105520735)"
               value={recipient}
               onChange={(e: any) => setRecipient(e.target.value)}
-              className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+              className="message-input w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
             />
           </div>
 
@@ -1781,10 +2018,8 @@ const Messages = () => {
                 setTemplateVariables([]);
                 handleClearFile();
               }}
-              className={`px-3 py-2 rounded-lg flex items-center justify-center gap-1 transition-colors ${
-                messageMode === 'text'
-                  ? 'bg-green-600 text-white'
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              className={`message-type-button ${
+                messageMode === 'text' ? 'active' : ''
               }`}
             >
               <MessageSquare className="w-4 h-4" />
@@ -1796,10 +2031,8 @@ const Messages = () => {
                 setSelectedTemplate(null);
                 setTemplateVariables([]);
               }}
-              className={`px-3 py-2 rounded-lg flex items-center justify-center gap-1 transition-colors ${
-                messageMode === 'media'
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              className={`message-type-button ${
+                messageMode === 'media' ? 'active' : ''
               }`}
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1814,10 +2047,8 @@ const Messages = () => {
                 setTemplateVariables([]);
                 handleClearFile();
               }}
-              className={`px-3 py-2 rounded-lg flex items-center justify-center gap-1 transition-colors ${
-                messageMode === 'buttons'
-                  ? 'bg-orange-600 text-white'
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              className={`message-type-button ${
+                messageMode === 'buttons' ? 'active' : ''
               }`}
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1832,10 +2063,8 @@ const Messages = () => {
                 setTemplateVariables([]);
                 handleClearFile();
               }}
-              className={`px-3 py-2 rounded-lg flex items-center justify-center gap-1 transition-colors ${
-                messageMode === 'list'
-                  ? 'bg-indigo-600 text-white'
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              className={`message-type-button ${
+                messageMode === 'list' ? 'active' : ''
               }`}
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1850,10 +2079,8 @@ const Messages = () => {
                 setTemplateVariables([]);
                 handleClearFile();
               }}
-              className={`px-3 py-2 rounded-lg flex items-center justify-center gap-1 transition-colors ${
-                messageMode === 'cta'
-                  ? 'bg-teal-600 text-white'
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              className={`message-type-button ${
+                messageMode === 'cta' ? 'active' : ''
               }`}
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1868,10 +2095,8 @@ const Messages = () => {
                 setTemplateVariables([]);
                 handleClearFile();
               }}
-              className={`px-3 py-2 rounded-lg flex items-center justify-center gap-1 transition-colors ${
-                messageMode === 'location'
-                  ? 'bg-red-600 text-white'
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              className={`message-type-button ${
+                messageMode === 'location' ? 'active' : ''
               }`}
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1887,10 +2112,8 @@ const Messages = () => {
                 setTemplateVariables([]);
                 handleClearFile();
               }}
-              className={`px-3 py-2 rounded-lg flex items-center justify-center gap-1 transition-colors ${
-                messageMode === 'contact'
-                  ? 'bg-cyan-600 text-white'
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              className={`message-type-button ${
+                messageMode === 'contact' ? 'active' : ''
               }`}
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1905,10 +2128,8 @@ const Messages = () => {
                 setTemplateVariables([]);
                 handleClearFile();
               }}
-              className={`px-3 py-2 rounded-lg flex items-center justify-center gap-1 transition-colors ${
-                messageMode === 'sticker'
-                  ? 'bg-yellow-600 text-white'
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              className={`message-type-button ${
+                messageMode === 'sticker' ? 'active' : ''
               }`}
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1923,10 +2144,8 @@ const Messages = () => {
                 setTemplateVariables([]);
                 handleClearFile();
               }}
-              className={`px-3 py-2 rounded-lg flex items-center justify-center gap-1 transition-colors ${
-                messageMode === 'location_request'
-                  ? 'bg-pink-600 text-white'
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              className={`message-type-button ${
+                messageMode === 'location_request' ? 'active' : ''
               }`}
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1942,10 +2161,8 @@ const Messages = () => {
                 setTemplateVariables([]);
                 handleClearFile();
               }}
-              className={`px-3 py-2 rounded-lg flex items-center justify-center gap-1 transition-colors ${
-                messageMode === 'address'
-                  ? 'bg-orange-600 text-white'
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              className={`message-type-button ${
+                messageMode === 'address' ? 'active' : ''
               }`}
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1954,11 +2171,41 @@ const Messages = () => {
               <span className="text-xs">Address</span>
             </button>
             <button
+              onClick={() => {
+                setMessageMode('media_carousel');
+                setSelectedTemplate(null);
+                setTemplateVariables([]);
+                handleClearFile();
+              }}
+              className={`message-type-button ${
+                messageMode === 'media_carousel' ? 'active' : ''
+              }`}
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              </svg>
+              <span className="text-xs">Media Carousel</span>
+            </button>
+            <button
+              onClick={() => {
+                setMessageMode('product_carousel');
+                setSelectedTemplate(null);
+                setTemplateVariables([]);
+                handleClearFile();
+              }}
+              className={`message-type-button ${
+                messageMode === 'product_carousel' ? 'active' : ''
+              }`}
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+              </svg>
+              <span className="text-xs">Product Carousel</span>
+            </button>
+            <button
               onClick={() => setMessageMode('template')}
-              className={`px-3 py-2 rounded-lg flex items-center justify-center gap-1 transition-colors ${
-                messageMode === 'template'
-                  ? 'bg-purple-600 text-white'
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              className={`message-type-button ${
+                messageMode === 'template' ? 'active' : ''
               }`}
             >
               <FileText className="w-4 h-4" />
@@ -2252,7 +2499,7 @@ const Messages = () => {
                 </div>
                 <button
                   onClick={handleSendMessage}
-                  className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center gap-2"
+                  className="send-button flex items-center gap-2"
                 >
                   <Send className="w-4 h-4" />
                   Send
@@ -2424,7 +2671,7 @@ const Messages = () => {
                   <button
                     onClick={handleSendMessage}
                     disabled={uploading}
-                    className="w-full px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                    className="send-button w-full disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                   >
                     {uploading ? (
                       <>
@@ -2527,7 +2774,7 @@ const Messages = () => {
               <button
                 onClick={handleSendMessage}
                 disabled={!buttonText || buttons.every(btn => !btn.title)}
-                className="w-full px-6 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                className="send-button w-full disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
                 <Send className="w-4 h-4" />
                 Send Interactive Buttons
@@ -2683,7 +2930,7 @@ const Messages = () => {
               <button
                 onClick={handleSendMessage}
                 disabled={!listBodyText || listSections.every(s => s.rows.every(r => !r.title))}
-                className="w-full px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                className="send-button w-full disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
                 <Send className="w-4 h-4" />
                 Send Interactive List
@@ -2759,7 +3006,7 @@ const Messages = () => {
               <button
                 onClick={handleSendMessage}
                 disabled={!ctaBodyText || !ctaButtonText || !ctaUrl || !ctaUrl.match(/^https?:\/\/.+/)}
-                className="w-full px-6 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                className="send-button w-full disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
                 <Send className="w-4 h-4" />
                 Send CTA Button
@@ -2872,7 +3119,7 @@ const Messages = () => {
               <button
                 onClick={handleSendMessage}
                 disabled={!locationLatitude || !locationLongitude}
-                className="w-full px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                className="send-button w-full disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
                 <Send className="w-4 h-4" />
                 Send Location
@@ -3011,7 +3258,7 @@ const Messages = () => {
               <button
                 onClick={handleSendMessage}
                 disabled={!contactName || !contactPhone}
-                className="w-full px-6 py-2 bg-cyan-600 text-white rounded-lg hover:bg-cyan-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                className="send-button w-full disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
                 <Send className="w-4 h-4" />
                 Send Contact
@@ -3111,7 +3358,7 @@ const Messages = () => {
               <button
                 onClick={handleSendMessage}
                 disabled={!stickerUrl || !stickerUrl.match(/^https?:\/\/.+/)}
-                className="w-full px-6 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                className="send-button w-full disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
                 <Send className="w-4 h-4" />
                 Send Sticker
@@ -3177,7 +3424,7 @@ const Messages = () => {
               <button
                 onClick={handleSendMessage}
                 disabled={!locationRequestText.trim()}
-                className="w-full px-6 py-2 bg-pink-600 text-white rounded-lg hover:bg-pink-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                className="send-button w-full disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
                 <Send className="w-4 h-4" />
                 Request Location
@@ -3300,10 +3547,289 @@ const Messages = () => {
               <button
                 onClick={handleSendMessage}
                 disabled={!addressName.trim() || !addressStreet.trim() || !addressCity.trim() || !addressCountry.trim()}
-                className="w-full px-6 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                className="send-button w-full disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
                 <Send className="w-4 h-4" />
                 Send Address
+              </button>
+            </div>
+          )}
+
+          {/* Media Carousel Mode */}
+          {messageMode === 'media_carousel' && (
+            <div className="space-y-3">
+              <div className="p-4 bg-purple-50 rounded-lg border border-purple-200">
+                <p className="text-sm text-purple-800 mb-2">
+                  <strong>📸 Media Carousel</strong>
+                </p>
+                <p className="text-xs text-purple-700">
+                  Send 2-10 horizontally scrollable cards with images/videos and CTA buttons. All cards must use the same media type.
+                </p>
+              </div>
+
+              {/* Body Text */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Message Text * (max 1024 chars)
+                </label>
+                <textarea
+                  placeholder="Check out our latest offers!"
+                  value={carouselBodyText}
+                  onChange={(e) => setCarouselBodyText(e.target.value)}
+                  maxLength={1024}
+                  rows={2}
+                  className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                />
+                <p className="text-xs text-gray-500 mt-1">{carouselBodyText.length}/1024 characters</p>
+              </div>
+
+              {/* Cards */}
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <label className="block text-sm font-medium text-gray-700">
+                    Cards ({carouselCards.length}/10)
+                  </label>
+                  {carouselCards.length < 10 && (
+                    <button
+                      onClick={handleAddCarouselCard}
+                      className="text-sm text-purple-600 hover:text-purple-700 flex items-center gap-1"
+                    >
+                      <Plus className="w-4 h-4" />
+                      Add Card
+                    </button>
+                  )}
+                </div>
+
+                <div className="space-y-4 max-h-96 overflow-y-auto">
+                  {carouselCards.map((card, index) => (
+                    <div key={index} className="p-4 border-2 border-purple-200 rounded-lg bg-purple-50">
+                      <div className="flex items-center justify-between mb-3">
+                        <h4 className="font-medium text-purple-900">Card {index + 1}</h4>
+                        {carouselCards.length > 2 && (
+                          <button
+                            onClick={() => handleRemoveCarouselCard(index)}
+                            className="p-1 text-red-500 hover:text-red-700 hover:bg-red-50 rounded transition-colors"
+                          >
+                            <X className="w-4 h-4" />
+                          </button>
+                        )}
+                      </div>
+
+                      <div className="space-y-3">
+                        {/* Header Type */}
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Media Type * {index === 0 && '(all cards must match)'}
+                          </label>
+                          <select
+                            value={card.headerType}
+                            onChange={(e) => handleCarouselCardChange(index, 'headerType', e.target.value)}
+                            disabled={index > 0}
+                            className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm disabled:bg-gray-100"
+                          >
+                            <option value="image">Image</option>
+                            <option value="video">Video</option>
+                          </select>
+                        </div>
+
+                        {/* Media Link */}
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            {card.headerType === 'image' ? 'Image' : 'Video'} URL *
+                          </label>
+                          <input
+                            type="url"
+                            placeholder={`https://example.com/${card.headerType === 'image' ? 'image.jpg' : 'video.mp4'}`}
+                            value={card.mediaLink}
+                            onChange={(e) => handleCarouselCardChange(index, 'mediaLink', e.target.value)}
+                            className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm"
+                          />
+                        </div>
+
+                        {/* Body Text */}
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Card Text (optional, max 160 chars)
+                          </label>
+                          <input
+                            type="text"
+                            placeholder="Exclusive deal #1"
+                            value={card.bodyText}
+                            onChange={(e) => handleCarouselCardChange(index, 'bodyText', e.target.value)}
+                            maxLength={160}
+                            className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm"
+                          />
+                          <p className="text-xs text-gray-500 mt-1">{card.bodyText.length}/160</p>
+                        </div>
+
+                        {/* Button Text */}
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Button Text * (max 20 chars)
+                          </label>
+                          <input
+                            type="text"
+                            placeholder="Shop now"
+                            value={card.buttonText}
+                            onChange={(e) => handleCarouselCardChange(index, 'buttonText', e.target.value)}
+                            maxLength={20}
+                            className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm"
+                          />
+                          <p className="text-xs text-gray-500 mt-1">{card.buttonText.length}/20</p>
+                        </div>
+
+                        {/* Button URL */}
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Button URL *
+                          </label>
+                          <input
+                            type="url"
+                            placeholder="https://shop.example.com/deal1"
+                            value={card.buttonUrl}
+                            onChange={(e) => handleCarouselCardChange(index, 'buttonUrl', e.target.value)}
+                            className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Send Button */}
+              <button
+                onClick={handleSendMessage}
+                disabled={
+                  !carouselBodyText.trim() ||
+                  carouselCards.some(card => !card.mediaLink || !card.buttonText || !card.buttonUrl)
+                }
+                className="send-button w-full disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              >
+                <Send className="w-4 h-4" />
+                Send Media Carousel
+              </button>
+            </div>
+          )}
+
+          {/* Product Carousel Mode */}
+          {messageMode === 'product_carousel' && (
+            <div className="space-y-3">
+              <div className="p-4 bg-fuchsia-50 rounded-lg border border-fuchsia-200">
+                <p className="text-sm text-fuchsia-800 mb-2">
+                  <strong>🛍️ Product Carousel</strong>
+                </p>
+                <p className="text-xs text-fuchsia-700">
+                  Send 2-10 horizontally scrollable product cards from your catalog. Requires WhatsApp Business Catalog setup.
+                </p>
+              </div>
+
+              {/* Body Text */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Message Text * (max 1024 chars)
+                </label>
+                <textarea
+                  placeholder="Check out our featured products!"
+                  value={productCarouselBodyText}
+                  onChange={(e) => setProductCarouselBodyText(e.target.value)}
+                  maxLength={1024}
+                  rows={2}
+                  className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-fuchsia-500"
+                />
+                <p className="text-xs text-gray-500 mt-1">{productCarouselBodyText.length}/1024 characters</p>
+              </div>
+
+              {/* Catalog ID */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Catalog ID *
+                </label>
+                <input
+                  type="text"
+                  placeholder="Your WhatsApp Business Catalog ID"
+                  value={catalogId}
+                  onChange={(e) => setCatalogId(e.target.value)}
+                  className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-fuchsia-500"
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  Find this in your WhatsApp Business Manager under Commerce → Catalogs
+                </p>
+              </div>
+
+              {/* Product Cards */}
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <label className="block text-sm font-medium text-gray-700">
+                    Products ({productCards.length}/10)
+                  </label>
+                  {productCards.length < 10 && (
+                    <button
+                      onClick={handleAddProductCard}
+                      className="text-sm text-fuchsia-600 hover:text-fuchsia-700 flex items-center gap-1"
+                    >
+                      <Plus className="w-4 h-4" />
+                      Add Product
+                    </button>
+                  )}
+                </div>
+
+                <div className="space-y-3 max-h-96 overflow-y-auto">
+                  {productCards.map((card, index) => (
+                    <div key={index} className="p-3 border-2 border-fuchsia-200 rounded-lg bg-fuchsia-50">
+                      <div className="flex items-center gap-3">
+                        <div className="flex-1">
+                          <label className="block text-xs font-medium text-gray-700 mb-1">
+                            Product {index + 1} - Retailer ID *
+                          </label>
+                          <input
+                            type="text"
+                            placeholder="Product SKU or Retailer ID"
+                            value={card.productRetailerId}
+                            onChange={(e) => handleProductCardChange(index, e.target.value)}
+                            className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-fuchsia-500 text-sm"
+                          />
+                          <p className="text-xs text-gray-500 mt-1">
+                            The unique product ID from your catalog
+                          </p>
+                        </div>
+                        {productCards.length > 2 && (
+                          <button
+                            onClick={() => handleRemoveProductCard(index)}
+                            className="p-2 text-red-500 hover:text-red-700 hover:bg-red-50 rounded transition-colors flex-shrink-0"
+                          >
+                            <X className="w-4 h-4" />
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Helper Info */}
+              <div className="p-3 bg-blue-50 rounded-lg border border-blue-200">
+                <p className="text-sm text-blue-900 font-medium mb-1">💡 How to find Product IDs:</p>
+                <ul className="text-xs text-blue-800 space-y-1 ml-4 list-disc">
+                  <li>Go to WhatsApp Business Manager → Commerce → Catalogs</li>
+                  <li>Select your catalog and view products</li>
+                  <li>Each product has a "Retailer ID" (also called SKU or Product ID)</li>
+                  <li>Copy the exact ID and paste it here</li>
+                </ul>
+              </div>
+
+              {/* Send Button */}
+              <button
+                onClick={handleSendMessage}
+                disabled={
+                  !productCarouselBodyText.trim() ||
+                  !catalogId.trim() ||
+                  productCards.some(card => !card.productRetailerId.trim())
+                }
+                className="send-button w-full disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              >
+                <Send className="w-4 h-4" />
+                Send Product Carousel
               </button>
             </div>
           )}
@@ -3356,7 +3882,7 @@ const Messages = () => {
               <button
                 onClick={handleSendMessage}
                 disabled={!selectedTemplate}
-                className="w-full px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                className="send-button w-full disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
                 <Send className="w-4 h-4" />
                 Send Template

@@ -13,14 +13,14 @@ export const VoiceMessage = ({ mediaUrl, mediaId, duration, isSent }: VoiceMessa
   const [audioDuration, setAudioDuration] = useState(duration || 0);
   const audioRef = useRef<HTMLAudioElement>(null);
 
-  // 格式化时间显示 (秒 -> MM:SS)
+  // Format time display (seconds -> MM:SS)
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
     const secs = Math.floor(seconds % 60);
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
-  // 加载音频元数据
+  // Load audio metadata
   useEffect(() => {
     if (audioRef.current) {
       audioRef.current.addEventListener('loadedmetadata', () => {
@@ -53,12 +53,12 @@ export const VoiceMessage = ({ mediaUrl, mediaId, duration, isSent }: VoiceMessa
         await audioRef.current.play();
         setIsPlaying(true);
       } catch (error) {
-        console.error('播放失败:', error);
+        console.error('Playback failed:', error);
       }
     }
   };
 
-  // 获取音频 URL
+  // Get audio URL
   const getAudioUrl = () => {
     if (mediaUrl) return mediaUrl;
     if (mediaId) return `/api/messages/media/${mediaId}`;
@@ -101,10 +101,10 @@ export const VoiceMessage = ({ mediaUrl, mediaId, duration, isSent }: VoiceMessa
 
   return (
     <div className="flex items-center gap-2 p-2 min-w-[200px]">
-      {/* 隐藏的 audio 元素 */}
+      {/* Hidden audio element */}
       <audio ref={audioRef} src={audioUrl} preload="metadata" />
 
-      {/* 播放/暂停按钮 */}
+      {/* Play/Pause button */}
       <button
         onClick={togglePlay}
         disabled={!audioUrl}
@@ -115,21 +115,21 @@ export const VoiceMessage = ({ mediaUrl, mediaId, duration, isSent }: VoiceMessa
         } ${!audioUrl ? 'opacity-50 cursor-not-allowed' : ''}`}
       >
         {isPlaying ? (
-          // 暂停图标
+          // Pause icon
           <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
             <path d="M6 4h2v12H6V4zm6 0h2v12h-2V4z" />
           </svg>
         ) : (
-          // 播放图标
+          // Play icon
           <svg className="w-5 h-5 ml-0.5" fill="currentColor" viewBox="0 0 20 20">
             <path d="M6 4l10 6-10 6V4z" />
           </svg>
         )}
       </button>
 
-      {/* 波形和时长 */}
+      {/* Waveform and duration */}
       <div className="flex-1 min-w-0">
-        {/* 简化的波形（进度条） */}
+        {/* Simplified waveform (progress bar) */}
         <div className={`relative h-1 rounded-full overflow-hidden mb-1 ${
           isSent ? 'bg-white/30' : 'bg-gray-300'
         }`}>
@@ -141,7 +141,7 @@ export const VoiceMessage = ({ mediaUrl, mediaId, duration, isSent }: VoiceMessa
           />
         </div>
         
-        {/* 时长显示 */}
+        {/* Duration display */}
         <div className={`flex items-center gap-1 text-xs ${
           isSent ? 'text-white/90' : 'text-gray-600'
         }`}>
@@ -152,7 +152,7 @@ export const VoiceMessage = ({ mediaUrl, mediaId, duration, isSent }: VoiceMessa
         </div>
       </div>
 
-      {/* 麦克风图标 */}
+      {/* Microphone icon */}
       <div className={`flex-shrink-0 ${isSent ? 'text-white/80' : 'text-gray-400'}`}>
         <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
           <path d="M10 3a3 3 0 00-3 3v4a3 3 0 006 0V6a3 3 0 00-3-3z" />

@@ -1,0 +1,130 @@
+WhatsApp QR codes and short links create a digital doorstep for businesses, enabling them to stay connected with their existing customers and connect with new ones. This way, customers can simply scan QR codes with their mobile device camera or type in a short link to begin a chat thread, without needing to input a phone number.
+You can view, create, edit and delete QR codes and short links in the WhatsApp Business Management API or in the Business Manager UI.
+Limitations
+A single WABA phone number cannot be associated with more than 2,000 QR codes and short links.
+A QR code scan can initiate a pre-filled message containing up to 140 characters of text.
+Analytics are not available for QR Codes and Short Links as we limit the amount of data we log to protect user privacy.
+Create QR code
+To create a QR code, send a POST request to the WhatsApp Business Phone Number > Message Qrdls endpoint.
+In your post body, include an object with a prefilled_message property set to your message text and a generate_qr_image property set to your preferred image format, either SVG or PNG.
+Example request
+curl 'https://graph.facebook.com/v24.0/106540352242922/message_qrdls' \
+-H 'Content-Type: application/json' \
+-H 'Authorization: Bearer EAAJB...' \
+-d '
+{
+  "prefilled_message": "Cyber Monday",
+  "generate_qr_image": "SVG"
+}'
+Example response
+{
+  "code": "4O4YGZEG3RIVE1",
+  "prefilled_message": "Cyber Monday 1",
+  "deep_link_url": "https://wa.me/message/4O4YGZEG3RIVE1",
+  "qr_image_url": "https://scontent-iad3-2.xx.fbcdn.net/..."
+}
+
+Get a list of QR codes and short links
+To get a list of all QR codes on a business phone number, send a GET request to the WhatsApp Business Phone Number > Message Qrdls endpoint. To use the Business Manager to get a list of existing QR codes, see the Help Center article.
+Example request
+curl 'https://graph.facebook.com/v24.0/106540352242922/message_qrdls' \
+-H 'Authorization: Bearer EAAJB...'
+Example response
+{
+  "data": [
+    {
+      "code": "4O4YGZEG3RIVE1",
+      "prefilled_message": "Cyber Monday",
+      "deep_link_url": "https://wa.me/message/4O4YGZEG3RIVE1"
+    },
+    {
+      "code": "WOMVT6TJ2BP7A1",
+      "prefilled_message": "Tell me more about your production workshop",
+      "deep_link_url": "https://wa.me/message/WOMVT6TJ2BP7A1"
+    }
+  ]
+}
+
+Get a QR code
+To get information about a specific QR code, send a GET request to the WhatsApp Business Phone Number > Message Qrdls endpoint and append the QR code ID as a path parameter.
+Example request
+curl 'https://graph.facebook.com/v24.0/106540352242922/message_qrdls/4O4YGZEG3RIVE1' \
+-H 'Authorization: Bearer EAAJB...'
+Example response
+{
+  "data": [
+    {
+      "code": "4O4YGZEG3RIVE1",
+      "prefilled_message": "Cyber Monday",
+      "deep_link_url": "https://wa.me/message/4O4YGZEG3RIVE1"
+    }
+  ]
+}
+
+Update a QR code
+To update a QR code, send a POST request to the WhatsApp Business Phone Number > Message Qrdls endpoint.
+In the post body, include a code property set to the ID of the QR code you wish to update, and a prefilled_message property set to the new QR code text.
+Example request
+curl 'https://graph.facebook.com/v24.0/106540352242922/message_qrdls' \
+-H 'Content-Type: application/json' \
+-H 'Authorization: Bearer EAAJB...' \
+-d '
+{
+    "code": "4O4YGZEG3RIVE1",
+    "prefilled_message": "Cyber Tuesday"
+}'
+Example response
+{
+  "code": "4O4YGZEG3RIVE1",
+  "prefilled_message": "Cyber Tuesday",
+  "deep_link_url": "https://wa.me/message/4O4YGZEG3RIVE1"
+}
+
+Delete QR code
+QR codes do not expire automatically. To delete a QR code, send a DELETE request to the WhatsApp Business Phone Number > Message Qrdls endpoint and append the ID of the QR code you wish to retire as a path parameter. To use the Business Manager to delete QR codes, see the Help Center article.
+Example request
+curl -X DELETE 'https://graph.facebook.com/v24.0/106540352242922/message_qrdls/4O4YGZEG3RIVE1' \
+-H 'Authorization: Bearer EAAJB...'
+Example response
+{
+  "success": true
+}
+
+Prefilled messages
+QR codes and short links can be programmed to populate a prefilled message. Prefilled messages can contain up to 140 characters of text. These messages are fully customizable and can be updated or deleted at any time.
+User experience
+User Scenario	Expected Behavior
+User tries to access a code or link that has been deleted.
+User sees an error message saying “This QR code [short link] has expired”.
+User scans the QR code or types in the short link of a business they previously blocked.
+User gets a prompt asking if they would like to unblock the business to continue messaging them.
+User clicks a short link on a desktop browser.
+Desktop client launches with message populated in chat thread. If there is no client installed, user is prompted to install it.
+Best practices
+Format
+We recommend outputting the QR code as a scalable vector graphic (.svg) file. You can resize your QR Code to develop product packaging, signage, etc.
+Appearance
+While we do not offer the capability to natively customize QR codes, you can do so by downloading and editing QR codes with the software of your choice. We recommend you do not customize the color or look and feel of the code itself in order to preserve readability.
+FAQs
+How do I create a QR code or short link?
+You can view, create, edit and delete QR codes and short links in the WhatsApp Business Management API or in the Business Manager UI.
+How many QR codes and short links can I create?
+A single WABA phone number cannot be associated with more than 2,000 QR codes and short links.
+What is the best format to use to optimize print quality of a QR code?
+We recommend the .svg file format for the best quality in print materials.
+How do short links improve on the existing wa.me links?
+The new short links enable prefilled messages associated with a link to be edited or deleted at any time. They also reduce the syntax of the URL to a random code, which eliminates the need to embed messages in the URL and masks the phone number.
+What happens if a user clicks a short link on a desktop?
+If the user has the WhatsApp desktop client installed, it will launch a chat thread with your business. If not, the user will be prompted to install the WhatsApp desktop client.
+What happens when a user scans a QR code or clicks a short link that has been deleted?
+If a user tries to access a QR code or short link that has been deleted, they will see an error message indicating the QR code/short link has expired.
+How does this differ from QR codes I am already generating in my own development environment today?
+QR codes can now be generated and managed directly within the WhatsApp Business Management API and users can scan them with their WhatsApp, iOS, or Android camera.
+In addition, with WhatsApp QR codes
+Prefilled messages are fully customizable and can be changed or deleted at any time,
+Users will always go directly to the app without any interstitial page, and
+The in-app experience for an expired code sends the user a clear message.
+How can I ensure the code is scanned by users in the right language?
+You will be responsible for using the appropriate QR code based on expected location and language of users.
+Will analytics be available to track QR code scans?
+Analytics are not available for QR Codes and Short Links as we limit the amount of data we log to protect user privacy.

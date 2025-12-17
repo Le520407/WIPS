@@ -8,10 +8,12 @@ import MissedCallBadge from './MissedCallBadge';
 const Layout = () => {
   const location = useLocation();
   const { logout, user } = useAuth();
-  const [callingOpen, setCallingOpen] = useState(true);
-  const [templatesOpen, setTemplatesOpen] = useState(false);
-  const [advancedOpen, setAdvancedOpen] = useState(false);
-  const [securityOpen, setSecurityOpen] = useState(false);
+  const [messagingOpen, setMessagingOpen] = useState(false);
+  const [callingOpen, setCallingOpen] = useState(false);
+  const [marketingOpen, setMarketingOpen] = useState(false);
+  const [accountOpen, setAccountOpen] = useState(false);
+  const [monitoringOpen, setMonitoringOpen] = useState(false);
+  const [integrationOpen, setIntegrationOpen] = useState(false);
   const [resourcesOpen, setResourcesOpen] = useState(false);
 
   const isDemoMode = localStorage.getItem('demo_mode') === 'true';
@@ -24,48 +26,56 @@ const Layout = () => {
     { path: '/groups', icon: Users, label: 'Groups' },
   ];
 
-  // Calling section - Simplified from 9 to 4 items
+  // Messaging & Communication
+  const messagingItems = [
+    { path: '/templates', icon: FileText, label: 'Templates' },
+    { path: '/conversational-components', icon: MessageSquare, label: 'Interactive Messages' },
+    { path: '/authentication-templates', icon: Shield, label: 'OTP Templates' },
+  ];
+
+  // Calling section
   const callingItems = [
     { path: '/calls', icon: Phone, label: 'Calls' },
     { path: '/missed-calls', icon: PhoneMissed, label: 'Missed Calls', badge: true },
-    { path: '/call-settings', icon: Settings, label: 'Settings' },
+    { path: '/call-settings', icon: Settings, label: 'Call Settings' },
     { path: '/call-button', icon: Phone, label: 'Call Button' },
   ];
 
-  // Templates section - Simplified from 4 to 2 items
-  const templateItems = [
-    { path: '/templates', icon: FileText, label: 'Templates' },
-    { path: '/quality', icon: Shield, label: 'Quality Monitor' },
-  ];
-
-  // Advanced Features section
-  const advancedItems = [
-    { path: '/conversational-components', icon: MessageSquare, label: 'Conversational Components' },
-    { path: '/authentication-templates', icon: Shield, label: 'Authentication (OTP)' },
-  ];
-
-  // Security & Privacy section
-  const securityItems = [
-    { path: '/blocked-users', icon: Shield, label: 'Blocked Users' },
-  ];
-
-  // Resources & Tools section
-  const resourceItems = [
-    { path: '/review-tips', icon: BookOpen, label: 'Review Tips' },
-    { path: '/marketing-limits', icon: TrendingUp, label: 'Marketing Limits' },
-    { path: '/pacing', icon: TrendingUp, label: 'Pacing' },
-    { path: '/template-library', icon: BookOpen, label: 'Library' },
-    { path: '/template-comparison', icon: BookOpen, label: 'Comparison' },
-  ];
-
-  // Settings (always visible at bottom of nav)
-  const settingsItems = [
-    { path: '/account-settings', icon: Settings, label: 'Account Settings' },
-    { path: '/business-profile', icon: Building2, label: 'Business Profile' },
-    { path: '/commerce', icon: ShoppingCart, label: 'E-commerce' },
+  // Marketing & Commerce
+  const marketingItems = [
     { path: '/marketing', icon: TrendingUp, label: 'Marketing Campaigns' },
+    { path: '/marketing-limits', icon: TrendingUp, label: 'Marketing Limits' },
+    { path: '/commerce', icon: ShoppingCart, label: 'E-commerce' },
+  ];
+
+  // Account Management
+  const accountItems = [
+    { path: '/phone-number-status', icon: Phone, label: 'Phone Status' },
+    { path: '/phone-registration', icon: Phone, label: 'Phone Registration' },
+    { path: '/display-name', icon: FileText, label: 'Display Name' },
+    { path: '/business-profile', icon: Building2, label: 'Business Profile' },
+    { path: '/two-step-verification', icon: Shield, label: 'Two-Step Verification' },
+  ];
+
+  // Quality & Monitoring
+  const monitoringItems = [
+    { path: '/quality', icon: Shield, label: 'Quality Monitor' },
+    { path: '/pacing', icon: TrendingUp, label: 'Pacing Monitor' },
+  ];
+
+  // Integration & Settings
+  const integrationItems = [
     { path: '/websites', icon: Globe, label: 'Website Management' },
     { path: '/webhook-settings', icon: Webhook, label: 'Webhook Settings' },
+    { path: '/blocked-users', icon: Shield, label: 'Blocked Users' },
+    { path: '/account-settings', icon: Settings, label: 'Account Settings' },
+  ];
+
+  // Resources & Tools
+  const resourceItems = [
+    { path: '/review-tips', icon: BookOpen, label: 'Review Tips' },
+    { path: '/template-library', icon: BookOpen, label: 'Template Library' },
+    { path: '/template-comparison', icon: BookOpen, label: 'Template Comparison' },
   ];
 
   // Admin section (only for admin/super_admin)
@@ -101,15 +111,50 @@ const Layout = () => {
             </Link>
           ))}
           
+          {/* Messaging & Communication */}
+          <div className="mt-2">
+            <button
+              onClick={() => setMessagingOpen(!messagingOpen)}
+              className="w-full flex items-center justify-between px-6 py-3 text-gray-700 hover:bg-green-50 hover:text-green-600 font-medium text-left"
+            >
+              <div className="flex items-center min-w-0">
+                <MessageSquare className="w-5 h-5 mr-3 flex-shrink-0" />
+                <span className="truncate">Messaging</span>
+              </div>
+              {messagingOpen ? (
+                <ChevronDown className="w-4 h-4" />
+              ) : (
+                <ChevronRight className="w-4 h-4" />
+              )}
+            </button>
+            
+            {messagingOpen && (
+              <div className="bg-gray-50">
+                {messagingItems.map(item => (
+                  <Link
+                    key={item.path}
+                    to={item.path}
+                    className={`flex items-center px-6 py-2 pl-14 text-sm text-gray-600 hover:bg-green-50 hover:text-green-600 ${
+                      location.pathname === item.path ? 'bg-green-50 text-green-600 border-r-4 border-green-600' : ''
+                    }`}
+                  >
+                    <item.icon className="w-4 h-4 mr-3" />
+                    {item.label}
+                  </Link>
+                ))}
+              </div>
+            )}
+          </div>
+
           {/* Calling Section */}
           <div className="mt-2">
             <button
               onClick={() => setCallingOpen(!callingOpen)}
-              className="w-full flex items-center justify-between px-6 py-3 text-gray-700 hover:bg-green-50 hover:text-green-600 font-medium"
+              className="w-full flex items-center justify-between px-6 py-3 text-gray-700 hover:bg-green-50 hover:text-green-600 font-medium text-left"
             >
-              <div className="flex items-center">
-                <Phone className="w-5 h-5 mr-3" />
-                <span>Calling</span>
+              <div className="flex items-center min-w-0">
+                <Phone className="w-5 h-5 mr-3 flex-shrink-0" />
+                <span className="truncate">Calling</span>
               </div>
               {callingOpen ? (
                 <ChevronDown className="w-4 h-4" />
@@ -137,61 +182,26 @@ const Layout = () => {
             )}
           </div>
 
-          {/* Templates Section */}
+          {/* Marketing & Commerce */}
           <div className="mt-2">
             <button
-              onClick={() => setTemplatesOpen(!templatesOpen)}
-              className="w-full flex items-center justify-between px-6 py-3 text-gray-700 hover:bg-green-50 hover:text-green-600 font-medium"
+              onClick={() => setMarketingOpen(!marketingOpen)}
+              className="w-full flex items-center justify-between px-6 py-3 text-gray-700 hover:bg-green-50 hover:text-green-600 font-medium text-left"
             >
-              <div className="flex items-center">
-                <FileText className="w-5 h-5 mr-3" />
-                <span>Templates</span>
+              <div className="flex items-center min-w-0">
+                <TrendingUp className="w-5 h-5 mr-3 flex-shrink-0" />
+                <span className="truncate">Marketing</span>
               </div>
-              {templatesOpen ? (
+              {marketingOpen ? (
                 <ChevronDown className="w-4 h-4" />
               ) : (
                 <ChevronRight className="w-4 h-4" />
               )}
             </button>
             
-            {templatesOpen && (
+            {marketingOpen && (
               <div className="bg-gray-50">
-                {templateItems.map(item => (
-                  <Link
-                    key={item.path}
-                    to={item.path}
-                    className={`flex items-center px-6 py-2 pl-14 text-sm text-gray-600 hover:bg-green-50 hover:text-green-600 ${
-                      location.pathname === item.path ? 'bg-green-50 text-green-600 border-r-4 border-green-600' : ''
-                    }`}
-                  >
-                    <item.icon className="w-4 h-4 mr-3" />
-                    {item.label}
-                  </Link>
-                ))}
-              </div>
-            )}
-          </div>
-          
-          {/* Advanced Features Section */}
-          <div className="mt-2">
-            <button
-              onClick={() => setAdvancedOpen(!advancedOpen)}
-              className="w-full flex items-center justify-between px-6 py-3 text-gray-700 hover:bg-green-50 hover:text-green-600 font-medium"
-            >
-              <div className="flex items-center">
-                <MessageSquare className="w-5 h-5 mr-3" />
-                <span>Advanced</span>
-              </div>
-              {advancedOpen ? (
-                <ChevronDown className="w-4 h-4" />
-              ) : (
-                <ChevronRight className="w-4 h-4" />
-              )}
-            </button>
-            
-            {advancedOpen && (
-              <div className="bg-gray-50">
-                {advancedItems.map(item => (
+                {marketingItems.map(item => (
                   <Link
                     key={item.path}
                     to={item.path}
@@ -207,26 +217,96 @@ const Layout = () => {
             )}
           </div>
 
-          {/* Security & Privacy Section */}
+          {/* Account Management */}
           <div className="mt-2">
             <button
-              onClick={() => setSecurityOpen(!securityOpen)}
-              className="w-full flex items-center justify-between px-6 py-3 text-gray-700 hover:bg-green-50 hover:text-green-600 font-medium"
+              onClick={() => setAccountOpen(!accountOpen)}
+              className="w-full flex items-center justify-between px-6 py-3 text-gray-700 hover:bg-green-50 hover:text-green-600 font-medium text-left"
             >
-              <div className="flex items-center">
-                <Shield className="w-5 h-5 mr-3" />
-                <span>Security</span>
+              <div className="flex items-center min-w-0">
+                <Building2 className="w-5 h-5 mr-3 flex-shrink-0" />
+                <span className="truncate">Account</span>
               </div>
-              {securityOpen ? (
+              {accountOpen ? (
                 <ChevronDown className="w-4 h-4" />
               ) : (
                 <ChevronRight className="w-4 h-4" />
               )}
             </button>
             
-            {securityOpen && (
+            {accountOpen && (
               <div className="bg-gray-50">
-                {securityItems.map(item => (
+                {accountItems.map(item => (
+                  <Link
+                    key={item.path}
+                    to={item.path}
+                    className={`flex items-center px-6 py-2 pl-14 text-sm text-gray-600 hover:bg-green-50 hover:text-green-600 ${
+                      location.pathname === item.path ? 'bg-green-50 text-green-600 border-r-4 border-green-600' : ''
+                    }`}
+                  >
+                    <item.icon className="w-4 h-4 mr-3" />
+                    {item.label}
+                  </Link>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Quality & Monitoring */}
+          <div className="mt-2">
+            <button
+              onClick={() => setMonitoringOpen(!monitoringOpen)}
+              className="w-full flex items-center justify-between px-6 py-3 text-gray-700 hover:bg-green-50 hover:text-green-600 font-medium text-left"
+            >
+              <div className="flex items-center min-w-0">
+                <Shield className="w-5 h-5 mr-3 flex-shrink-0" />
+                <span className="truncate">Monitoring</span>
+              </div>
+              {monitoringOpen ? (
+                <ChevronDown className="w-4 h-4" />
+              ) : (
+                <ChevronRight className="w-4 h-4" />
+              )}
+            </button>
+            
+            {monitoringOpen && (
+              <div className="bg-gray-50">
+                {monitoringItems.map(item => (
+                  <Link
+                    key={item.path}
+                    to={item.path}
+                    className={`flex items-center px-6 py-2 pl-14 text-sm text-gray-600 hover:bg-green-50 hover:text-green-600 ${
+                      location.pathname === item.path ? 'bg-green-50 text-green-600 border-r-4 border-green-600' : ''
+                    }`}
+                  >
+                    <item.icon className="w-4 h-4 mr-3" />
+                    {item.label}
+                  </Link>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Integration & Settings */}
+          <div className="mt-2">
+            <button
+              onClick={() => setIntegrationOpen(!integrationOpen)}
+              className="w-full flex items-center justify-between px-6 py-3 text-gray-700 hover:bg-green-50 hover:text-green-600 font-medium text-left"
+            >
+              <div className="flex items-center min-w-0">
+                <Settings className="w-5 h-5 mr-3 flex-shrink-0" />
+                <span className="truncate">Settings</span>
+              </div>
+              {integrationOpen ? (
+                <ChevronDown className="w-4 h-4" />
+              ) : (
+                <ChevronRight className="w-4 h-4" />
+              )}
+            </button>
+            
+            {integrationOpen && (
+              <div className="bg-gray-50">
+                {integrationItems.map(item => (
                   <Link
                     key={item.path}
                     to={item.path}
@@ -246,11 +326,11 @@ const Layout = () => {
           <div className="mt-2">
             <button
               onClick={() => setResourcesOpen(!resourcesOpen)}
-              className="w-full flex items-center justify-between px-6 py-3 text-gray-700 hover:bg-green-50 hover:text-green-600 font-medium"
+              className="w-full flex items-center justify-between px-6 py-3 text-gray-700 hover:bg-green-50 hover:text-green-600 font-medium text-left"
             >
-              <div className="flex items-center">
-                <BookOpen className="w-5 h-5 mr-3" />
-                <span>Resources</span>
+              <div className="flex items-center min-w-0">
+                <BookOpen className="w-5 h-5 mr-3 flex-shrink-0" />
+                <span className="truncate">Resources</span>
               </div>
               {resourcesOpen ? (
                 <ChevronDown className="w-4 h-4" />
@@ -275,22 +355,6 @@ const Layout = () => {
                 ))}
               </div>
             )}
-          </div>
-
-          {/* Settings */}
-          <div className="mt-4 pt-4 border-t">
-            {settingsItems.map(item => (
-              <Link
-                key={item.path}
-                to={item.path}
-                className={`flex items-center px-6 py-3 text-gray-700 hover:bg-green-50 hover:text-green-600 ${
-                  location.pathname === item.path ? 'bg-green-50 text-green-600 border-r-4 border-green-600' : ''
-                }`}
-              >
-                <item.icon className="w-5 h-5 mr-3" />
-                {item.label}
-              </Link>
-            ))}
           </div>
 
           {/* Admin Section */}

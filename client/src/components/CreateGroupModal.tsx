@@ -37,7 +37,7 @@ const CreateGroupModal: React.FC<CreateGroupModalProps> = ({
     });
     
     if (!actualPhoneNumberId || actualPhoneNumberId.trim() === '') {
-      alert('请先在上方蓝色框中输入 Phone Number ID\n\nPlease enter your Phone Number ID first in the blue box above\n\n你的 Phone Number ID 是: 803320889535856');
+      alert('Please enter your Phone Number ID first in the blue box above\n\nYour Phone Number ID is: 803320889535856');
       onClose();
       return;
     }

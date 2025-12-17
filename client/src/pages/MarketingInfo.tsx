@@ -32,32 +32,32 @@ const MarketingInfo = () => {
           icon: CheckCircle,
           color: 'text-green-600',
           bgColor: 'bg-green-50',
-          title: '✅ Marketing Messages API 已启用',
-          description: '您的账户已成功开通Marketing Messages API，可以开始发送优化的营销消息。',
+          title: '✅ Marketing Messages API Enabled',
+          description: 'Your account has successfully enabled Marketing Messages API and can start sending optimized marketing messages.',
         };
       case 'ELIGIBLE':
         return {
           icon: Info,
           color: 'text-blue-600',
           bgColor: 'bg-blue-50',
-          title: '📋 需要完成Onboarding',
-          description: '您的账户符合条件，但需要先接受Terms of Service才能使用。',
+          title: '📋 Onboarding Required',
+          description: 'Your account is eligible, but you need to accept the Terms of Service first.',
         };
       case 'NOT_ELIGIBLE':
         return {
           icon: AlertCircle,
           color: 'text-red-600',
           bgColor: 'bg-red-50',
-          title: '❌ 账户不符合条件',
-          description: '您的WABA账户暂时不符合Marketing Messages API的使用条件。',
+          title: '❌ Account Not Eligible',
+          description: 'Your WABA account does not currently meet the requirements for Marketing Messages API.',
         };
       default:
         return {
           icon: Info,
           color: 'text-gray-600',
           bgColor: 'bg-gray-50',
-          title: '🔍 检查中...',
-          description: '正在检查您的账户状态...',
+          title: '🔍 Checking...',
+          description: 'Checking your account status...',
         };
     }
   };
@@ -74,7 +74,7 @@ const MarketingInfo = () => {
           Marketing Messages API
         </h1>
         <p className="mt-2 text-gray-600">
-          Meta的下一代营销解决方案，提供自动优化、性能基准和转化跟踪
+          Meta's next-generation marketing solution with automatic optimization, performance benchmarks, and conversion tracking
         </p>
       </div>
 
@@ -96,32 +96,32 @@ const MarketingInfo = () => {
 
       {/* What is Marketing Messages API */}
       <div className="bg-white rounded-lg shadow p-6">
-        <h2 className="text-xl font-bold text-gray-900 mb-4">什么是 Marketing Messages API？</h2>
+        <h2 className="text-xl font-bold text-gray-900 mb-4">What is Marketing Messages API?</h2>
         <div className="space-y-4">
           <div className="flex items-start">
             <Zap className="w-5 h-5 text-yellow-500 mr-3 flex-shrink-0 mt-1" />
             <div>
-              <h3 className="font-semibold text-gray-900">自动优化送达</h3>
+              <h3 className="font-semibold text-gray-900">Automatic Delivery Optimization</h3>
               <p className="text-gray-600">
-                通过AI优化，将消息发送给更可能阅读和点击的用户，送达率提升高达9%
+                AI-powered optimization sends messages to users more likely to read and click, improving delivery rates by up to 9%
               </p>
             </div>
           </div>
           <div className="flex items-start">
             <Target className="w-5 h-5 text-blue-500 mr-3 flex-shrink-0 mt-1" />
             <div>
-              <h3 className="font-semibold text-gray-900">转化跟踪</h3>
+              <h3 className="font-semibold text-gray-900">Conversion Tracking</h3>
               <p className="text-gray-600">
-                追踪用户点击后的行为（加入购物车、购买等），衡量营销ROI
+                Track user behavior after clicks (add to cart, purchases, etc.) to measure marketing ROI
               </p>
             </div>
           </div>
           <div className="flex items-start">
             <BarChart className="w-5 h-5 text-green-500 mr-3 flex-shrink-0 mt-1" />
             <div>
-              <h3 className="font-semibold text-gray-900">性能基准</h3>
+              <h3 className="font-semibold text-gray-900">Performance Benchmarks</h3>
               <p className="text-gray-600">
-                对比同行业的表现，获得个性化的改进建议
+                Compare against industry performance and receive personalized improvement recommendations
               </p>
             </div>
           </div>
@@ -130,46 +130,46 @@ const MarketingInfo = () => {
 
       {/* Key Differences */}
       <div className="bg-white rounded-lg shadow p-6">
-        <h2 className="text-xl font-bold text-gray-900 mb-4">与普通消息的区别</h2>
+        <h2 className="text-xl font-bold text-gray-900 mb-4">Differences from Regular Messages</h2>
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">功能</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">普通消息 (Cloud API)</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Feature</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Regular Messages (Cloud API)</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Marketing Messages API</th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
               <tr>
-                <td className="px-6 py-4 text-sm font-medium text-gray-900">API端点</td>
+                <td className="px-6 py-4 text-sm font-medium text-gray-900">API Endpoint</td>
                 <td className="px-6 py-4 text-sm text-gray-600">/messages</td>
                 <td className="px-6 py-4 text-sm text-gray-600">/marketing_messages</td>
               </tr>
               <tr>
-                <td className="px-6 py-4 text-sm font-medium text-gray-900">送达优化</td>
-                <td className="px-6 py-4 text-sm text-gray-600">❌ 无</td>
-                <td className="px-6 py-4 text-sm text-gray-600">✅ AI自动优化</td>
+                <td className="px-6 py-4 text-sm font-medium text-gray-900">Delivery Optimization</td>
+                <td className="px-6 py-4 text-sm text-gray-600">❌ None</td>
+                <td className="px-6 py-4 text-sm text-gray-600">✅ AI Auto-optimization</td>
               </tr>
               <tr>
-                <td className="px-6 py-4 text-sm font-medium text-gray-900">转化跟踪</td>
-                <td className="px-6 py-4 text-sm text-gray-600">❌ 无</td>
-                <td className="px-6 py-4 text-sm text-gray-600">✅ 完整跟踪</td>
+                <td className="px-6 py-4 text-sm font-medium text-gray-900">Conversion Tracking</td>
+                <td className="px-6 py-4 text-sm text-gray-600">❌ None</td>
+                <td className="px-6 py-4 text-sm text-gray-600">✅ Full Tracking</td>
               </tr>
               <tr>
-                <td className="px-6 py-4 text-sm font-medium text-gray-900">性能基准</td>
-                <td className="px-6 py-4 text-sm text-gray-600">❌ 无</td>
-                <td className="px-6 py-4 text-sm text-gray-600">✅ 行业对比</td>
+                <td className="px-6 py-4 text-sm font-medium text-gray-900">Performance Benchmarks</td>
+                <td className="px-6 py-4 text-sm text-gray-600">❌ None</td>
+                <td className="px-6 py-4 text-sm text-gray-600">✅ Industry Comparison</td>
               </tr>
               <tr>
-                <td className="px-6 py-4 text-sm font-medium text-gray-900">创意优化</td>
-                <td className="px-6 py-4 text-sm text-gray-600">❌ 无</td>
-                <td className="px-6 py-4 text-sm text-gray-600">✅ 图片动画、滤镜等</td>
+                <td className="px-6 py-4 text-sm font-medium text-gray-900">Creative Optimization</td>
+                <td className="px-6 py-4 text-sm text-gray-600">❌ None</td>
+                <td className="px-6 py-4 text-sm text-gray-600">✅ Image animations, filters, etc.</td>
               </tr>
               <tr>
-                <td className="px-6 py-4 text-sm font-medium text-gray-900">TTL（时效性）</td>
-                <td className="px-6 py-4 text-sm text-gray-600">❌ 无</td>
-                <td className="px-6 py-4 text-sm text-gray-600">✅ 12小时-30天</td>
+                <td className="px-6 py-4 text-sm font-medium text-gray-900">TTL (Time to Live)</td>
+                <td className="px-6 py-4 text-sm text-gray-600">❌ None</td>
+                <td className="px-6 py-4 text-sm text-gray-600">✅ 12 hours - 30 days</td>
               </tr>
             </tbody>
           </table>
@@ -179,16 +179,16 @@ const MarketingInfo = () => {
       {/* Onboarding Steps */}
       {onboardingStatus === 'ELIGIBLE' && (
         <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
-          <h2 className="text-xl font-bold text-gray-900 mb-4">📋 如何开通？</h2>
+          <h2 className="text-xl font-bold text-gray-900 mb-4">📋 How to Enable?</h2>
           <div className="space-y-4">
             <div className="flex items-start">
               <div className="flex-shrink-0 w-8 h-8 bg-blue-600 text-white rounded-full flex items-center justify-center font-bold">
                 1
               </div>
               <div className="ml-4">
-                <h3 className="font-semibold text-gray-900">打开 WhatsApp Manager</h3>
+                <h3 className="font-semibold text-gray-900">Open WhatsApp Manager</h3>
                 <p className="text-gray-600 mt-1">
-                  访问{' '}
+                  Visit{' '}
                   <a
                     href="https://business.facebook.com/wa/manage/home/"
                     target="_blank"
@@ -207,9 +207,9 @@ const MarketingInfo = () => {
                 2
               </div>
               <div className="ml-4">
-                <h3 className="font-semibold text-gray-900">找到 Marketing Messages API 提示</h3>
+                <h3 className="font-semibold text-gray-900">Find Marketing Messages API Alert</h3>
                 <p className="text-gray-600 mt-1">
-                  在 Overview 页面的 Alerts 部分，点击 "Accept terms to get started for Marketing Messages API for WhatsApp"
+                  In the Overview page's Alerts section, click "Accept terms to get started for Marketing Messages API for WhatsApp"
                 </p>
               </div>
             </div>
@@ -219,9 +219,9 @@ const MarketingInfo = () => {
                 3
               </div>
               <div className="ml-4">
-                <h3 className="font-semibold text-gray-900">接受 Terms of Service</h3>
+                <h3 className="font-semibold text-gray-900">Accept Terms of Service</h3>
                 <p className="text-gray-600 mt-1">
-                  按照步骤完成Terms of Service的签署
+                  Follow the steps to complete the Terms of Service acceptance
                 </p>
               </div>
             </div>
@@ -231,9 +231,9 @@ const MarketingInfo = () => {
                 4
               </div>
               <div className="ml-4">
-                <h3 className="font-semibold text-gray-900">刷新此页面</h3>
+                <h3 className="font-semibold text-gray-900">Refresh This Page</h3>
                 <p className="text-gray-600 mt-1">
-                  完成后，回到这里刷新页面，状态会更新为"已启用"
+                  After completion, return here and refresh the page. The status will update to "Enabled"
                 </p>
               </div>
             </div>
@@ -243,7 +243,7 @@ const MarketingInfo = () => {
             onClick={checkOnboardingStatus}
             className="mt-6 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
           >
-            刷新状态
+            Refresh Status
           </button>
         </div>
       )}
@@ -251,17 +251,17 @@ const MarketingInfo = () => {
       {/* Not Eligible Info */}
       {onboardingStatus === 'NOT_ELIGIBLE' && (
         <div className="bg-red-50 border border-red-200 rounded-lg p-6">
-          <h2 className="text-xl font-bold text-gray-900 mb-4">❌ 为什么不符合条件？</h2>
+          <h2 className="text-xl font-bold text-gray-900 mb-4">❌ Why Not Eligible?</h2>
           <div className="space-y-2 text-gray-700">
-            <p>可能的原因：</p>
+            <p>Possible reasons:</p>
             <ul className="list-disc list-inside space-y-1 ml-4">
-              <li>WABA账户被限制或暂停</li>
-              <li>WABA税务国家在制裁地区</li>
-              <li>Business所有者国家在制裁地区</li>
-              <li>账户违反了WhatsApp Business Messaging Policies</li>
+              <li>WABA account is restricted or suspended</li>
+              <li>WABA tax country is in a sanctioned region</li>
+              <li>Business owner country is in a sanctioned region</li>
+              <li>Account violated WhatsApp Business Messaging Policies</li>
             </ul>
             <p className="mt-4">
-              请先解决账户问题，然后刷新此页面重新检查。
+              Please resolve account issues first, then refresh this page to check again.
             </p>
           </div>
         </div>
@@ -269,25 +269,25 @@ const MarketingInfo = () => {
 
       {/* Use Cases */}
       <div className="bg-white rounded-lg shadow p-6">
-        <h2 className="text-xl font-bold text-gray-900 mb-4">💡 适用场景</h2>
+        <h2 className="text-xl font-bold text-gray-900 mb-4">💡 Use Cases</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="border border-gray-200 rounded-lg p-4">
-            <h3 className="font-semibold text-gray-900 mb-2">✅ 适合使用</h3>
+            <h3 className="font-semibold text-gray-900 mb-2">✅ Recommended For</h3>
             <ul className="space-y-1 text-sm text-gray-600">
-              <li>• 促销活动通知</li>
-              <li>• 新品发布</li>
-              <li>• 限时优惠</li>
-              <li>• 会员专享活动</li>
-              <li>• 季节性营销</li>
+              <li>• Promotional campaign notifications</li>
+              <li>• New product launches</li>
+              <li>• Limited-time offers</li>
+              <li>• Member-exclusive events</li>
+              <li>• Seasonal marketing</li>
             </ul>
           </div>
           <div className="border border-gray-200 rounded-lg p-4">
-            <h3 className="font-semibold text-gray-900 mb-2">❌ 不适合使用</h3>
+            <h3 className="font-semibold text-gray-900 mb-2">❌ Not Recommended For</h3>
             <ul className="space-y-1 text-sm text-gray-600">
-              <li>• 订单确认（用Utility）</li>
-              <li>• 验证码（用Authentication）</li>
-              <li>• 客服消息（用Service）</li>
-              <li>• 一对一聊天（用Freeform）</li>
+              <li>• Order confirmations (use Utility)</li>
+              <li>• Verification codes (use Authentication)</li>
+              <li>• Customer service messages (use Service)</li>
+              <li>• One-on-one chats (use Freeform)</li>
             </ul>
           </div>
         </div>
@@ -295,7 +295,7 @@ const MarketingInfo = () => {
 
       {/* Documentation Links */}
       <div className="bg-white rounded-lg shadow p-6">
-        <h2 className="text-xl font-bold text-gray-900 mb-4">📚 相关文档</h2>
+        <h2 className="text-xl font-bold text-gray-900 mb-4">📚 Related Documentation</h2>
         <div className="space-y-2">
           <a
             href="https://developers.facebook.com/docs/whatsapp/business-management-api/marketing-messages"
@@ -304,7 +304,7 @@ const MarketingInfo = () => {
             className="flex items-center text-blue-600 hover:underline"
           >
             <ExternalLink className="w-4 h-4 mr-2" />
-            Marketing Messages API 官方文档
+            Marketing Messages API Official Documentation
           </a>
           <a
             href="https://developers.facebook.com/docs/whatsapp/business-management-api/marketing-messages/onboarding"
@@ -313,7 +313,7 @@ const MarketingInfo = () => {
             className="flex items-center text-blue-600 hover:underline"
           >
             <ExternalLink className="w-4 h-4 mr-2" />
-            Onboarding 指南
+            Onboarding Guide
           </a>
           <a
             href="https://developers.facebook.com/docs/whatsapp/business-management-api/marketing-messages/insights"
@@ -322,7 +322,7 @@ const MarketingInfo = () => {
             className="flex items-center text-blue-600 hover:underline"
           >
             <ExternalLink className="w-4 h-4 mr-2" />
-            Insights API 文档
+            Insights API Documentation
           </a>
         </div>
       </div>
@@ -332,12 +332,12 @@ const MarketingInfo = () => {
         <div className="flex items-start">
           <Info className="w-5 h-5 text-yellow-600 mr-3 flex-shrink-0 mt-0.5" />
           <div className="text-sm text-gray-700">
-            <p className="font-semibold mb-1">注意事项：</p>
+            <p className="font-semibold mb-1">Important Notes:</p>
             <ul className="list-disc list-inside space-y-1">
-              <li>Marketing Messages API 和 Cloud API 使用相同的电话号码</li>
-              <li>计费模式与 Cloud API 相同</li>
-              <li>需要使用 Marketing category 的模板</li>
-              <li>消息会自动与Meta共享事件数据用于优化（可在设置中关闭）</li>
+              <li>Marketing Messages API and Cloud API use the same phone number</li>
+              <li>Billing model is the same as Cloud API</li>
+              <li>Requires templates with Marketing category</li>
+              <li>Messages automatically share event data with Meta for optimization (can be disabled in settings)</li>
             </ul>
           </div>
         </div>

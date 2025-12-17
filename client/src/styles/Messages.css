@@ -1,0 +1,274 @@
+/* 🎨 Messages页面美化样式 */
+
+/* 消息气泡优化 */
+.message-bubble-sent {
+  background: linear-gradient(135deg, #DCF8C6 0%, #C8E6C9 100%) !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15) !important;
+  border: 1px solid #A5D6A7 !important;
+  border-radius: 12px 12px 2px 12px !important;
+  transition: all 0.2s ease !important;
+  color: #1B5E20 !important;
+}
+
+.message-bubble-sent:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25) !important;
+  transform: translateY(-1px);
+  border-color: #81C784 !important;
+}
+
+.message-bubble-received {
+  background: #FFFFFF !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15) !important;
+  border: 1px solid #E0E0E0 !important;
+  border-radius: 12px 12px 12px 2px !important;
+  transition: all 0.2s ease !important;
+  color: #212121 !important;
+}
+
+.message-bubble-received:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25) !important;
+  transform: translateY(-1px);
+  border-color: #BDBDBD !important;
+}
+
+/* 按钮栏美化 */
+.message-type-button {
+  border-radius: 10px !important;
+  padding: 10px 16px !important;
+  font-weight: 600 !important;
+  transition: all 0.2s ease !important;
+  border: 2px solid #BDBDBD !important;
+  background: #FFFFFF !important;
+  color: #424242 !important;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1) !important;
+}
+
+.message-type-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2) !important;
+  border-color: #757575 !important;
+  background: #F5F5F5 !important;
+}
+
+.message-type-button.active {
+  background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%) !important;
+  color: #FFFFFF !important;
+  border-color: #388E3C !important;
+  box-shadow: 0 4px 12px rgba(76, 175, 80, 0.4) !important;
+}
+
+/* 输入框美化 */
+.message-input {
+  border-radius: 24px !important;
+  padding: 12px 20px !important;
+  border: 2px solid #9E9E9E !important;
+  background: #FFFFFF !important;
+  color: #212121 !important;
+  font-weight: 500 !important;
+  transition: all 0.2s ease !important;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1) !important;
+}
+
+.message-input:focus {
+  border-color: #4CAF50 !important;
+  box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.2), 0 2px 8px rgba(0, 0, 0, 0.15) !important;
+  outline: none !important;
+}
+
+/* 发送按钮美化 */
+.send-button {
+  background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%) !important;
+  border-radius: 12px !important;
+  padding: 12px 24px !important;
+  font-weight: 700 !important;
+  box-shadow: 0 4px 12px rgba(76, 175, 80, 0.4) !important;
+  transition: all 0.2s ease !important;
+  border: 2px solid #388E3C !important;
+  color: #FFFFFF !important;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2) !important;
+}
+
+.send-button:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(76, 175, 80, 0.5) !important;
+  background: linear-gradient(135deg, #66BB6A 0%, #4CAF50 100%) !important;
+  border-color: #2E7D32 !important;
+}
+
+.send-button:active:not(:disabled) {
+  transform: translateY(0);
+  box-shadow: 0 2px 8px rgba(76, 175, 80, 0.3) !important;
+}
+
+/* 对话列表项美化 */
+.conversation-item {
+  border-radius: 8px !important;
+  margin: 4px 8px !important;
+  padding: 14px !important;
+  transition: all 0.2s ease !important;
+  border: 1px solid transparent !important;
+  background: #FFFFFF !important;
+  cursor: pointer !important;
+}
+
+.conversation-item:hover {
+  background: #F5F5F5 !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1) !important;
+  transform: translateX(4px);
+  border-color: #E0E0E0 !important;
+}
+
+.conversation-item.active {
+  background: linear-gradient(135deg, #E8F5E9 0%, #C8E6C9 100%) !important;
+  border-left: 4px solid #4CAF50 !important;
+  box-shadow: 0 2px 8px rgba(76, 175, 80, 0.25) !important;
+  border-color: #A5D6A7 !important;
+}
+
+/* 图标按钮美化 */
+.icon-button {
+  border-radius: 50% !important;
+  padding: 10px !important;
+  transition: all 0.2s ease !important;
+  background: #F5F5F5 !important;
+  border: 1px solid #E0E0E0 !important;
+}
+
+.icon-button:hover {
+  background: #E8F5E9 !important;
+  transform: scale(1.1);
+  border-color: #A5D6A7 !important;
+  box-shadow: 0 2px 8px rgba(76, 175, 80, 0.2) !important;
+}
+
+/* 预览卡片美化 */
+.preview-card {
+  border-radius: 16px !important;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15) !important;
+  border: 2px solid #BDBDBD !important;
+  transition: all 0.2s ease !important;
+  background: #FFFFFF !important;
+}
+
+.preview-card:hover {
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25) !important;
+  transform: translateY(-2px);
+  border-color: #9E9E9E !important;
+}
+
+/* 模态框美化 */
+.modal-overlay {
+  backdrop-filter: blur(4px) !important;
+  background: rgba(0, 0, 0, 0.4) !important;
+}
+
+.modal-content {
+  border-radius: 20px !important;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3) !important;
+  animation: modalSlideIn 0.3s ease !important;
+}
+
+@keyframes modalSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-20px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* 徽章美化 */
+.badge {
+  border-radius: 12px !important;
+  padding: 4px 10px !important;
+  font-weight: 700 !important;
+  font-size: 12px !important;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2) !important;
+  border: 1px solid rgba(255, 255, 255, 0.3) !important;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2) !important;
+}
+
+/* 滚动条美化 */
+.messages-container::-webkit-scrollbar {
+  width: 10px;
+}
+
+.messages-container::-webkit-scrollbar-track {
+  background: #E0E0E0;
+  border-radius: 10px;
+  border: 1px solid #BDBDBD;
+}
+
+.messages-container::-webkit-scrollbar-thumb {
+  background: linear-gradient(135deg, #4CAF50 0%, #388E3C 100%);
+  border-radius: 10px;
+  border: 2px solid #E0E0E0;
+}
+
+.messages-container::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(135deg, #66BB6A 0%, #4CAF50 100%);
+  border-color: #BDBDBD;
+}
+
+/* 加载动画 */
+.loading-spinner {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* 淡入动画 */
+.fade-in {
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* 状态图标美化 */
+.status-icon {
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.1));
+  transition: all 0.2s ease;
+}
+
+.status-icon-read {
+  color: #2196F3 !important;
+  animation: pulse 2s ease infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
+/* 响应式优化 */
+@media (max-width: 768px) {
+  .message-bubble-sent,
+  .message-bubble-received {
+    max-width: 85% !important;
+  }
+  
+  .message-type-button {
+    padding: 8px 12px !important;
+    font-size: 13px !important;
+  }
+}
