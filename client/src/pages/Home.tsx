@@ -50,10 +50,10 @@ export default function Home() {
               Get Started
             </button>
             <button
-              onClick={() => navigate('/demo-info')}
+              onClick={() => navigate('/login')}
               className="px-8 py-4 bg-white hover:bg-gray-50 text-gray-900 border-2 border-gray-300 rounded-xl font-semibold text-lg transition-all"
             >
-              View Demo
+              Learn More
             </button>
           </div>
         </div>
@@ -142,7 +142,7 @@ export default function Home() {
           </p>
           <div className="flex justify-center gap-4">
             <button
-              onClick={() => navigate('/websites')}
+              onClick={() => navigate('/docs')}
               className="px-8 py-3 bg-white text-green-600 rounded-xl font-semibold hover:bg-gray-100 transition-colors"
             >
               View Integration Guide
@@ -184,7 +184,6 @@ export default function Home() {
             <div>
               <h4 className="text-lg font-semibold mb-4">Quick Links</h4>
               <ul className="space-y-2 text-gray-400">
-                <li><button onClick={() => navigate('/demo-info')} className="hover:text-white transition-colors">Demo</button></li>
                 <li><button onClick={() => navigate('/login')} className="hover:text-white transition-colors">Login</button></li>
                 <li><button onClick={() => navigate('/app/websites')} className="hover:text-white transition-colors">Integration</button></li>
               </ul>

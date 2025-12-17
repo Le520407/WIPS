@@ -20,7 +20,6 @@ const Layout = () => {
   
   // Main navigation items (always visible)
   const mainNavItems = [
-    ...(isDemoMode ? [{ path: '/app/demo-info', icon: LayoutDashboard, label: 'Demo Info' }] : []),
     { path: '/app/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
     { path: '/app/messages', icon: MessageSquare, label: 'Messages' },
     { path: '/app/groups', icon: Users, label: 'Groups' },
