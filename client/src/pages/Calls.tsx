@@ -287,37 +287,6 @@ const Calls = () => {
         )}
 
         {/* Important Notice */}
-        {/* Configuration Notice */}
-        <div className="bg-gradient-to-r from-blue-50 to-cyan-50 border border-blue-200 rounded-lg p-4 mb-4">
-          <div className="flex items-start gap-3">
-            <div className="flex-shrink-0">
-              <svg className="w-5 h-5 text-blue-600 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
-              </svg>
-            </div>
-            <div className="flex-1">
-              <h3 className="text-sm font-semibold text-blue-900 mb-1">🎯 Calling API Configuration Required</h3>
-              <p className="text-sm text-blue-800 mb-2">
-                To use WhatsApp Calling, you must enable it in Meta Business Manager:
-              </p>
-              <ul className="text-sm text-blue-800 space-y-1 list-disc list-inside">
-                <li>Go to your phone number settings in Meta Business Manager</li>
-                <li>Enable "Calling API" in Phone Number Call Settings</li>
-                <li><strong>🔥 Sandbox Account</strong>: 100 calls/day (vs 10 for production) - Perfect for testing!</li>
-                <li>Production: Requires 2000+ messaging conversations/24h</li>
-              </ul>
-              <div className="mt-3 flex items-center gap-2">
-                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                  ✅ You have Sandbox Account
-                </span>
-                <span className="text-xs text-blue-700">
-                  📖 See <code className="bg-blue-100 px-1 rounded">docs/12-04v2/SANDBOX_SETUP_GUIDE.md</code>
-                </span>
-              </div>
-            </div>
-          </div>
-        </div>
-
         {/* Initiate Call Form */}
         {showInitiateCall && (
           <div className="bg-white rounded-lg shadow p-4 mb-4">
@@ -327,7 +296,7 @@ const Calls = () => {
                 type="text"
                 value={phoneNumber}
                 onChange={(e) => setPhoneNumber(e.target.value)}
-                placeholder="Enter phone number (e.g., 60105520735)"
+                placeholder="Enter phone number (e.g., 60123456789)"
                 className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
               />
               <button

@@ -180,7 +180,7 @@ const CallButton = () => {
                 type="text"
                 value={messageForm.to}
                 onChange={(e) => setMessageForm({ ...messageForm, to: e.target.value })}
-                placeholder="+60105520735"
+                placeholder="+60123456789"
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
                 required
               />
@@ -377,7 +377,7 @@ const CallButton = () => {
                   type="text"
                   value={deepLinkMessageForm.to}
                   onChange={(e) => setDeepLinkMessageForm({ ...deepLinkMessageForm, to: e.target.value })}
-                  placeholder="+60105520735"
+                  placeholder="+60123456789"
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
                   required
                 />

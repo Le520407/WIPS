@@ -2002,7 +2002,7 @@ const Messages = () => {
           <div className="mb-3">
             <input
               type="text"
-              placeholder="Recipient number (e.g., +60105520735)"
+              placeholder="Recipient number (e.g., +60123456789)"
               value={recipient}
               onChange={(e: any) => setRecipient(e.target.value)}
               className="message-input w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
