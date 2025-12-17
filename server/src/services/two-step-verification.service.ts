@@ -91,27 +91,27 @@ export const validatePin = (pin: string): { valid: boolean; error?: string } => 
 };
 
 /**
- * 获取两步验证状态信息
+ * Get two-step verification status information
  */
 export const getTwoStepInfo = () => {
   return {
-    description: '两步验证为您的 WhatsApp Business 账户添加额外的安全层',
+    description: 'Two-step verification adds an extra layer of security to your WhatsApp Business account',
     benefits: [
-      '防止未经授权的访问',
-      '保护您的业务数据',
-      '符合安全最佳实践',
-      '增强客户信任'
+      'Prevent unauthorized access',
+      'Protect your business data',
+      'Comply with security best practices',
+      'Enhance customer trust'
     ],
     requirements: [
-      'PIN 必须是 6 位数字',
-      '不要与他人分享您的 PIN',
-      '定期更改 PIN 以提高安全性',
-      '妥善保管 PIN，丢失后需要联系 Meta 支持'
+      'PIN must be exactly 6 digits',
+      'Do not share your PIN with others',
+      'Change your PIN regularly for better security',
+      'Keep your PIN safe - you will need to contact Meta support if lost'
     ],
     warnings: [
-      '⚠️ 如果忘记 PIN，您将无法注册新设备',
-      '⚠️ 需要联系 Meta 支持才能重置 PIN',
-      '⚠️ 设置 PIN 后，7 天内无法删除'
+      '⚠️ If you forget your PIN, you will not be able to register new devices',
+      '⚠️ You will need to contact Meta support to reset your PIN',
+      '⚠️ After setting a PIN, it cannot be removed for 7 days'
     ]
   };
 };

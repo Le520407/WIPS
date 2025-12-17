@@ -85,14 +85,21 @@ export async function getAuthTemplates(req: AuthRequest, res: Response) {
   try {
     const user_id = req.user?.id;
     if (!user_id) {
+      console.error('getAuthTemplates: No user_id found in request');
       return res.status(401).json({ error: 'Unauthorized' });
     }
 
+    console.log('getAuthTemplates: Fetching templates for user:', user_id);
     const templates = await authTemplateService.getTemplates(user_id);
+    console.log('getAuthTemplates: Found', templates.length, 'templates');
     res.json({ templates });
   } catch (error: any) {
     console.error('Error getting auth templates:', error);
-    res.status(500).json({ error: 'Failed to get authentication templates' });
+    console.error('Error stack:', error.stack);
+    res.status(500).json({ 
+      error: 'Failed to get authentication templates',
+      details: error.message 
+    });
   }
 }
 
@@ -278,15 +285,22 @@ export async function getOTPHistory(req: AuthRequest, res: Response) {
   try {
     const user_id = req.user?.id;
     if (!user_id) {
+      console.error('getOTPHistory: No user_id found in request');
       return res.status(401).json({ error: 'Unauthorized' });
     }
 
+    console.log('getOTPHistory: Fetching history for user:', user_id);
     const limit = req.query.limit ? parseInt(req.query.limit as string) : 50;
     const history = await authTemplateService.getOTPHistory(user_id, limit);
+    console.log('getOTPHistory: Found', history.length, 'records');
 
     res.json({ history });
   } catch (error: any) {
     console.error('Error getting OTP history:', error);
-    res.status(500).json({ error: 'Failed to get OTP history' });
+    console.error('Error stack:', error.stack);
+    res.status(500).json({ 
+      error: 'Failed to get OTP history',
+      details: error.message 
+    });
   }
 }

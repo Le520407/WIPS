@@ -37,6 +37,8 @@ import phoneNumberRoutes from './routes/phone-number.routes';
 import twoStepVerificationRoutes from './routes/two-step-verification.routes';
 import phoneRegistrationRoutes from './routes/phone-registration.routes';
 import signalingService from './services/signaling.service';
+// Import models to ensure they're registered
+import './models';
 
 dotenv.config();
 

@@ -19,7 +19,7 @@ interface PhoneNumberStatus {
 }
 
 /**
- * 获取电话号码状态
+ * Get phone number status
  */
 export const getPhoneNumberStatus = async (): Promise<PhoneNumberStatus> => {
   const PHONE_NUMBER_ID = process.env.WHATSAPP_PHONE_NUMBER_ID;
@@ -44,14 +44,14 @@ export const getPhoneNumberStatus = async (): Promise<PhoneNumberStatus> => {
 
     const data = response.data;
 
-    // 解析吞吐量级别
+    // Parse throughput level
     let throughputLevel: 'STANDARD' | 'HIGH' | 'VERY_HIGH' | 'UNKNOWN' = 'UNKNOWN';
     let throughputLimit: number | undefined;
 
     if (data.throughput) {
       throughputLevel = data.throughput.level || 'UNKNOWN';
       
-      // 根据级别设置限制（每秒消息数）
+      // Set limit based on level (messages per second)
       switch (throughputLevel) {
         case 'STANDARD':
           throughputLimit = 80;
@@ -88,106 +88,106 @@ export const getPhoneNumberStatus = async (): Promise<PhoneNumberStatus> => {
 };
 
 /**
- * 获取质量评级的颜色和描述
+ * Get quality rating color and description
  */
 export const getQualityRatingInfo = (rating: string) => {
   switch (rating) {
     case 'GREEN':
       return {
         color: 'green',
-        label: '优秀',
-        description: '电话号码质量良好，没有限制'
+        label: 'Excellent',
+        description: 'Phone number quality is good, no restrictions'
       };
     case 'YELLOW':
       return {
         color: 'yellow',
-        label: '警告',
-        description: '电话号码质量一般，可能有轻微限制'
+        label: 'Warning',
+        description: 'Phone number quality is average, may have minor restrictions'
       };
     case 'RED':
       return {
         color: 'red',
-        label: '差',
-        description: '电话号码质量差，有严重限制'
+        label: 'Poor',
+        description: 'Phone number quality is poor, has severe restrictions'
       };
     default:
       return {
         color: 'gray',
-        label: '未知',
-        description: '无法获取质量评级'
+        label: 'Unknown',
+        description: 'Unable to retrieve quality rating'
       };
   }
 };
 
 /**
- * 获取连接状态的描述
+ * Get connection status description
  */
 export const getStatusInfo = (status: string) => {
   switch (status) {
     case 'CONNECTED':
       return {
         color: 'green',
-        label: '已连接',
-        description: '电话号码正常工作'
+        label: 'Connected',
+        description: 'Phone number is working normally'
       };
     case 'DISCONNECTED':
       return {
         color: 'red',
-        label: '已断开',
-        description: '电话号码未连接'
+        label: 'Disconnected',
+        description: 'Phone number is not connected'
       };
     case 'FLAGGED':
       return {
         color: 'orange',
-        label: '已标记',
-        description: '电话号码被标记，可能有问题'
+        label: 'Flagged',
+        description: 'Phone number is flagged, may have issues'
       };
     case 'RESTRICTED':
       return {
         color: 'red',
-        label: '受限',
-        description: '电话号码受到限制'
+        label: 'Restricted',
+        description: 'Phone number is restricted'
       };
     default:
       return {
         color: 'gray',
-        label: '未知',
-        description: '无法获取连接状态'
+        label: 'Unknown',
+        description: 'Unable to retrieve connection status'
       };
   }
 };
 
 /**
- * 获取吞吐量级别的描述
+ * Get throughput level description
  */
 export const getThroughputInfo = (level: string, limit?: number) => {
   switch (level) {
     case 'STANDARD':
       return {
         color: 'blue',
-        label: '标准',
-        description: `每秒最多 ${limit || 80} 条消息`,
+        label: 'Standard',
+        description: `Up to ${limit || 80} messages per second`,
         limit: limit || 80
       };
     case 'HIGH':
       return {
         color: 'green',
-        label: '高',
-        description: `每秒最多 ${limit || 200} 条消息`,
+        label: 'High',
+        description: `Up to ${limit || 200} messages per second`,
         limit: limit || 200
       };
     case 'VERY_HIGH':
       return {
         color: 'purple',
-        label: '非常高',
-        description: `每秒最多 ${limit || 1000} 条消息`,
+        label: 'Very High',
+        description: `Up to ${limit || 1000} messages per second`,
         limit: limit || 1000
       };
     default:
       return {
         color: 'gray',
-        label: '未知',
-        description: '无法获取吞吐量信息',
+        label: 'Unknown',
+        description: 'Unable to retrieve throughput information',
         limit: undefined
       };
   }

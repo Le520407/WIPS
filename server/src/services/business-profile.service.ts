@@ -219,44 +219,44 @@ export const getNameStatusInfo = (status: string) => {
     case 'APPROVED':
       return {
         color: 'green',
-        label: '已批准',
-        description: '显示名称已获批准'
+        label: 'Approved',
+        description: 'Display name has been approved'
       };
     case 'AVAILABLE_WITHOUT_REVIEW':
       return {
         color: 'blue',
-        label: '无需审核',
-        description: '显示名称可直接使用'
+        label: 'No Review Required',
+        description: 'Display name can be used directly'
       };
     case 'DECLINED':
       return {
         color: 'red',
-        label: '已拒绝',
-        description: '显示名称被拒绝'
+        label: 'Declined',
+        description: 'Display name was declined'
       };
     case 'EXPIRED':
       return {
         color: 'orange',
-        label: '已过期',
-        description: '显示名称已过期'
+        label: 'Expired',
+        description: 'Display name has expired'
       };
     case 'PENDING_REVIEW':
       return {
         color: 'yellow',
-        label: '审核中',
-        description: '显示名称正在审核'
+        label: 'Pending Review',
+        description: 'Display name is under review'
       };
     case 'NONE':
       return {
         color: 'gray',
-        label: '无',
-        description: '没有显示名称'
+        label: 'None',
+        description: 'No display name set'
       };
     default:
       return {
         color: 'gray',
-        label: '未知',
-        description: '无法获取名称状态'
+        label: 'Unknown',
+        description: 'Unable to retrieve name status'
       };
   }
 };

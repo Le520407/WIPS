@@ -151,44 +151,44 @@ export const verifyCode = async (code: string): Promise<any> => {
 };
 
 /**
- * 获取注册信息
+ * Get registration information
  */
 export const getRegistrationInfo = () => {
   return {
-    description: '电话号码注册允许您将 WhatsApp Business 电话号码连接到您的应用',
+    description: 'Phone number registration allows you to connect your WhatsApp Business phone number to your application',
     steps: [
       {
         step: 1,
-        title: '请求验证码',
-        description: '选择通过 SMS 或语音接收验证码'
+        title: 'Request Verification Code',
+        description: 'Choose to receive verification code via SMS or Voice'
       },
       {
         step: 2,
-        title: '输入验证码',
-        description: '输入收到的 6 位验证码'
+        title: 'Enter Verification Code',
+        description: 'Enter the 6-digit verification code you received'
       },
       {
         step: 3,
-        title: '设置 PIN',
-        description: '设置 6 位 PIN 码用于两步验证'
+        title: 'Set PIN',
+        description: 'Set a 6-digit PIN for two-step verification'
       },
       {
         step: 4,
-        title: '完成注册',
-        description: '使用 PIN 完成电话号码注册'
+        title: 'Complete Registration',
+        description: 'Complete phone number registration using the PIN'
       }
     ],
     requirements: [
-      '您必须拥有该电话号码',
-      '电话号码必须能够接收 SMS 或语音呼叫',
-      '需要设置两步验证 PIN',
-      '电话号码不能已在其他 WhatsApp Business 账户中使用'
+      'You must own the phone number',
+      'Phone number must be able to receive SMS or voice calls',
+      'Two-step verification PIN is required',
+      'Phone number cannot already be in use by another WhatsApp Business account'
     ],
     warnings: [
-      '⚠️ 注册会将电话号码从其他设备上注销',
-      '⚠️ 确保您有权访问该电话号码',
-      '⚠️ 注销会断开所有现有连接',
-      '⚠️ 注销后需要重新注册才能使用'
+      '⚠️ Registration will deregister the phone number from other devices',
+      '⚠️ Make sure you have access to the phone number',
+      '⚠️ Deregistration will disconnect all existing connections',
+      '⚠️ Re-registration is required after deregistration'
     ],
     languages: [
       { code: 'en_US', name: 'English (US)' },
