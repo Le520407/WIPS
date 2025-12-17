@@ -1,5 +1,8 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
+import Home from './pages/Home';
+import Terms from './pages/Terms';
+import Privacy from './pages/Privacy';
 import DemoLogin from './pages/DemoLogin';
 import DemoInfo from './pages/DemoInfo';
 import Dashboard from './pages/Dashboard';
@@ -47,10 +50,13 @@ function App() {
       <BrowserRouter>
         <NotificationManager />
         <Routes>
+          <Route path="/" element={<Home />} />
+          <Route path="/terms" element={<Terms />} />
+          <Route path="/privacy" element={<Privacy />} />
           <Route path="/login" element={<DemoLogin />} />
           <Route path="/auth/callback" element={<AuthCallback />} />
-          <Route path="/" element={<PrivateRoute><Layout /></PrivateRoute>}>
-            <Route index element={<Navigate to="/demo-info" replace />} />
+          <Route path="/app" element={<PrivateRoute><Layout /></PrivateRoute>}>
+            <Route index element={<Navigate to="/app/dashboard" replace />} />
             <Route path="demo-info" element={<DemoInfo />} />
             <Route path="dashboard" element={<Dashboard />} />
             <Route path="messages" element={<Messages />} />

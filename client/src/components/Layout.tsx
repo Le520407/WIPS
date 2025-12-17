@@ -20,69 +20,69 @@ const Layout = () => {
   
   // Main navigation items (always visible)
   const mainNavItems = [
-    ...(isDemoMode ? [{ path: '/demo-info', icon: LayoutDashboard, label: 'Demo Info' }] : []),
-    { path: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
-    { path: '/messages', icon: MessageSquare, label: 'Messages' },
-    { path: '/groups', icon: Users, label: 'Groups' },
+    ...(isDemoMode ? [{ path: '/app/demo-info', icon: LayoutDashboard, label: 'Demo Info' }] : []),
+    { path: '/app/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
+    { path: '/app/messages', icon: MessageSquare, label: 'Messages' },
+    { path: '/app/groups', icon: Users, label: 'Groups' },
   ];
 
   // Messaging & Communication
   const messagingItems = [
-    { path: '/templates', icon: FileText, label: 'Templates' },
-    { path: '/conversational-components', icon: MessageSquare, label: 'Interactive Messages' },
-    { path: '/authentication-templates', icon: Shield, label: 'OTP Templates' },
+    { path: '/app/templates', icon: FileText, label: 'Templates' },
+    { path: '/app/conversational-components', icon: MessageSquare, label: 'Interactive Messages' },
+    { path: '/app/authentication-templates', icon: Shield, label: 'OTP Templates' },
   ];
 
   // Calling section
   const callingItems = [
-    { path: '/calls', icon: Phone, label: 'Calls' },
-    { path: '/missed-calls', icon: PhoneMissed, label: 'Missed Calls', badge: true },
-    { path: '/call-settings', icon: Settings, label: 'Call Settings' },
-    { path: '/call-button', icon: Phone, label: 'Call Button' },
+    { path: '/app/calls', icon: Phone, label: 'Calls' },
+    { path: '/app/missed-calls', icon: PhoneMissed, label: 'Missed Calls', badge: true },
+    { path: '/app/call-settings', icon: Settings, label: 'Call Settings' },
+    { path: '/app/call-button', icon: Phone, label: 'Call Button' },
   ];
 
   // Marketing & Commerce
   const marketingItems = [
-    { path: '/marketing', icon: TrendingUp, label: 'Marketing Campaigns' },
-    { path: '/marketing-limits', icon: TrendingUp, label: 'Marketing Limits' },
-    { path: '/commerce', icon: ShoppingCart, label: 'E-commerce' },
+    { path: '/app/marketing', icon: TrendingUp, label: 'Marketing Campaigns' },
+    { path: '/app/marketing-limits', icon: TrendingUp, label: 'Marketing Limits' },
+    { path: '/app/commerce', icon: ShoppingCart, label: 'E-commerce' },
   ];
 
   // Account Management
   const accountItems = [
-    { path: '/phone-number-status', icon: Phone, label: 'Phone Status' },
-    { path: '/phone-registration', icon: Phone, label: 'Phone Registration' },
-    { path: '/display-name', icon: FileText, label: 'Display Name' },
-    { path: '/business-profile', icon: Building2, label: 'Business Profile' },
-    { path: '/two-step-verification', icon: Shield, label: 'Two-Step Verification' },
+    { path: '/app/phone-number-status', icon: Phone, label: 'Phone Status' },
+    { path: '/app/phone-registration', icon: Phone, label: 'Phone Registration' },
+    { path: '/app/display-name', icon: FileText, label: 'Display Name' },
+    { path: '/app/business-profile', icon: Building2, label: 'Business Profile' },
+    { path: '/app/two-step-verification', icon: Shield, label: 'Two-Step Verification' },
   ];
 
   // Quality & Monitoring
   const monitoringItems = [
-    { path: '/quality', icon: Shield, label: 'Quality Monitor' },
-    { path: '/pacing', icon: TrendingUp, label: 'Pacing Monitor' },
+    { path: '/app/quality', icon: Shield, label: 'Quality Monitor' },
+    { path: '/app/pacing', icon: TrendingUp, label: 'Pacing Monitor' },
   ];
 
   // Integration & Settings
   const integrationItems = [
-    { path: '/websites', icon: Globe, label: 'Website Management' },
-    { path: '/webhook-settings', icon: Webhook, label: 'Webhook Settings' },
-    { path: '/blocked-users', icon: Shield, label: 'Blocked Users' },
-    { path: '/account-settings', icon: Settings, label: 'Account Settings' },
+    { path: '/app/websites', icon: Globe, label: 'Website Management' },
+    { path: '/app/webhook-settings', icon: Webhook, label: 'Webhook Settings' },
+    { path: '/app/blocked-users', icon: Shield, label: 'Blocked Users' },
+    { path: '/app/account-settings', icon: Settings, label: 'Account Settings' },
   ];
 
   // Resources & Tools
   const resourceItems = [
-    { path: '/review-tips', icon: BookOpen, label: 'Review Tips' },
-    { path: '/template-library', icon: BookOpen, label: 'Template Library' },
-    { path: '/template-comparison', icon: BookOpen, label: 'Template Comparison' },
+    { path: '/app/review-tips', icon: BookOpen, label: 'Review Tips' },
+    { path: '/app/template-library', icon: BookOpen, label: 'Template Library' },
+    { path: '/app/template-comparison', icon: BookOpen, label: 'Template Comparison' },
   ];
 
   // Admin section (only for admin/super_admin)
   const adminItems = [
-    { path: '/admin/dashboard', icon: LayoutDashboard, label: 'Admin Dashboard' },
-    { path: '/admin/accounts', icon: Building2, label: 'Accounts' },
-    { path: '/admin/users', icon: UserCog, label: 'Users' },
+    { path: '/app/admin/dashboard', icon: LayoutDashboard, label: 'Admin Dashboard' },
+    { path: '/app/admin/accounts', icon: Building2, label: 'Accounts' },
+    { path: '/app/admin/users', icon: UserCog, label: 'Users' },
   ];
 
   return (

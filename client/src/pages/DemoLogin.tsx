@@ -44,7 +44,7 @@ const DemoLogin = () => {
       localStorage.setItem('token', data.token);
       
       await login(data.token);
-      navigate('/dashboard');
+      navigate('/app/dashboard');
     } catch (error: any) {
       console.error('Login error:', error);
       alert(error.message || 'Login failed. Please check your credentials.');
@@ -75,7 +75,7 @@ const DemoLogin = () => {
       localStorage.setItem('token', data.token);
       
       await login(data.token);
-      navigate('/dashboard');
+      navigate('/app/dashboard');
     } catch (error) {
       console.error('Test user login error:', error);
       alert('Failed to login. Make sure the server is running.');
@@ -134,7 +134,7 @@ const DemoLogin = () => {
       localStorage.setItem('token', data.token);
       
       await login(data.token);
-      navigate('/dashboard');
+      navigate('/app/dashboard');
     } catch (error) {
       console.error('Embedded signup error:', error);
       alert('Failed to complete WhatsApp connection. Please try again.');
