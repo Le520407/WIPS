@@ -1,0 +1,837 @@
+This document explains how pricing works on the WhatsApp Business Platform.
+Cloud API and Marketing Messages API for WhatsApp
+To align with industry-standards, effective July 1, 2025, we now charge on a per-message basis:
+We only charge when a template message is delivered ("type":"template").
+Rates vary based on the template’s category and the recipient WhatsApp phone number’s country calling code.
+We provide value to businesses in several ways:
+All non-template messages are free ("type":"text", "type":"image", etc.). These can only be sent within an open customer service window. See Sending messages for a list of message types.
+Utility templates delivered within an open customer service window are free.
+You can unlock lower rates for utility and authentication template messages, based on messaging volume.
+All messages are free for 72 hours, including template messages, if sent within an open free entry point window.
+Pricing explainer
+Our pricing explainer PDF outlines how we charge, and the various ways we provide value to businesses, in PDF form:
+Pricing Explainer PDF
+Message template categories
+Unlike non-template messages, template messages are the only message type that can be sent outside of a customer service window. Templates can be categorized as:
+Marketing
+Utility
+Authentication
+See Template categorization to learn how template categorization works.
+Template messages vs. non-template messages
+
+CSW = Customer service window
+FEP = Free entry point window
+Businesses are responsible for reviewing the category assigned to their approved templates. Whenever a template is used, a business accepts the charges associated with the category applied to the template at time of use.
+Charge example
+In the example below, a business sends 4 messages to a WhatsApp user but is only charged for 2 (1 marketing charge, 1 utility charge).
+Hour	Action	Rate	Reason
+0
+You send a marketing template message to a WhatsApp user, promoting your new product.
+Marketing
+All marketing template messages are charged.
+2
+The user messages you about the product.
+This opens a 24 hour customer service window (“CSW”).
+-
+Messages sent from a WhatsApp user to a business are not charged.
+3
+You send a text message to the user ("type":"text"), describing the product in more detail.
+None
+All non-template messages are free within an open customer service window.
+4
+The user purchases the product and you send them a utility template confirming their order.
+None
+The CSW is still open, and utility templates sent within an open CSW are free.
+26
+The CSW closes, which means you can no longer send non-template messages.
+-
+24 hours have passed since the user last messaged you.
+30
+You send a utility template message to the user, updating them on their order.
+Utility
+Utility template messages sent outside of a CSW are charged, and no open CSW exists between you and the user.
+Pricing calendar
+To better enable our customers to plan and prepare for pricing updates, the following pricing calendar applies for messaging and voice on the WhatsApp Business Platform:
+Meta may update pricing only on the 1st day of each quarter, thus up to 4 times per year: January 1, April 1, July 1, and/or October 1.
+Meta will provide advanced notice that is better aligned to the effort required to implement different types of pricing updates, per below:
+Type of pricing update	Examples	Minimum advance notice
+Rate card update
+Updating the rate for a given market–product
+Updating the volume tiers for a given market–product (utility and authentication only)
+Moving a market from one pricing region (e.g. “Other”) to another or to be standalone on the rate card
+1 month
+Pricing model add-on
+Our July 1, 2025, introduction of new volume tiers for utility and authentication messages
+3 months
+Pricing model change
+Our July 1, 2025 update to our pricing model, from conversation-based pricing to per-message pricing
+6 months
+Rates
+Rates vary based on template category, volume tier, and country/region rate.
+Rate cards and volume tiers
+These rate cards reflect our current rates and volume tiers, effective October 1, 2025, based on WhatsApp Business Account timezone. This information is also available interactively on our WhatsApp Business website.
+Rates and volume tiers in USD:
+USD rates CSV
+USD volume tiers CSV
+USD rates and volume tiers PDF
+Rates and volume tiers in INR:
+INR rates CSV
+INR volume tiers CSV
+INR rates and volume tiers PDF
+Rates and volume tiers in IDR:
+IDR rates CSV
+IDR volume tiers CSV
+IDR rates and volume tiers PDF
+Rates and volume tiers in EUR:
+EUR rates CSV
+EUR volume tiers CSV
+EUR rates and volume tiers PDF
+Rates and volume tiers in GBP:
+GBP rates CSV
+GBP volume tiers CSV
+GBP rates and volume tiers PDF
+Rates and volume tiers in AUD:
+AUD rates CSV
+AUD volume tiers CSV
+AUD rates and volume tiers PDF
+Updates to rate cards
+What is below represents future updates to our rates. See our rate cards above for current rates.
+Rate card updates effective January 1, 2026
+Effective Jan 1, 2026, at 12am, by WhatsApp Business Account timezone, the rates below will apply. These updates reflect:
+Marketing messages — Lower rate for France and Egypt. Higher rate for India.
+Utility and authentication messages — Lower rate for North America.
+Rates and volume tiers in USD effective January 1, 2026:
+USD rates CSV
+USD volume tiers CSV
+USD rates and volume tiers PDF
+Rates and volume tiers in INR effective January 1, 2026:
+INR rates CSV
+INR volume tiers CSV
+INR rates and volume tiers PDF
+Rates and volume tiers in IDR effective January 1, 2026:
+IDR rates CSV
+IDR volume tiers CSV
+IDR rates and volume tiers PDF
+Rates and volume tiers in EUR effective January 1, 2026:
+EUR rates CSV
+EUR volume tiers CSV
+EUR rates and volume tiers PDF
+Rates and volume tiers in GBP effective January 1, 2026:
+GBP rates CSV
+GBP volume tiers CSV
+GBP rates and volume tiers PDF
+Rates and volume tiers in AUD effective January 1, 2026:
+AUD rates CSV
+AUD volume tiers CSV
+AUD rates and volume tiers PDF
+NEW: Rates and volume tiers in MXN effective January 1, 2026:
+MXN rates CSV
+MXN volume tiers CSV
+MXN rates and volume tiers PDF
+Rate cards in new currencies launching in 2026
+In 2026, we are introducing rates for messaging and calling in 10 new currencies, to offer rates in 16 currencies by end-of-2026 for the WhatsApp Business Platform. Customers can choose to opt into these these newly-available currencies by creating a new WhatsApp Business Account (WABAs) and selecting that currency, as of 9am PT on the dates below:
+January 1, 2026 — 1 new currency: MXN (Mexico). Only available to businesses with credit lines. Will be made available to all businesses on April 1, 2026.
+April 1, 2026 — 8 new currencies: AED (United Arab Emirates), ARS (Argentina), CLP (Chile), COP (Colombia), MYR (Malaysia), PEN (Peru), SAR (Saudi Arabia), and SGD (Singapore). In addition, MXN (Mexico) will be available to all businesses.
+Second half of 2026 (the exact date is pending) — 1 new currency: BRL (Brazil).
+Our to-be MXN rates are published above and reflect updates to rates launching January 1, 2026. For the currencies launching April 1, 2026, we plan to publish them by March 1, 2026, aligned to our pricing calendar.
+Note that the currency of an existing WABA cannot be changed. The only way to take advantage of newly-available currencies is to create a new WABA and select that currency.
+Local billing launching for India and Brazil in 2026
+We are introducing local billing for eligible customers in India as of January 2026 and for Brazil in the second half of 2026 (the exact date is pending).
+Previous updates
+Effective October 1, 2025 at 12am by WhatsApp Business Account timezone, the rates below will apply. These updates reflect:
+Increased marketing message rates for United Arab Emirates.
+Increased utility and authentication message rates for Colombia.
+Decreased marketing message rates for Mexico.
+Decreased utility and authentication message rates for Saudi Arabia, Argentina, and Egypt.
+Zimbabwe is now mapped to our “Rest of Africa” region vs. “Other.”” Messages delivered to WhatsApp users with a +263 country calling code (Zimbabwe) will now be charged “Rest of Africa” rates.
+Effective July 1, 2025 – Lower utility and authentication message rates across several markets, to ensure we price on-par to alternate channels for these use cases. Marketing conversation rates became marketing message rates.
+Effective April 1, 2025 – Lowered authentication-international conversation rates for Egypt, Nigeria, Pakistan, and South Africa.
+Effective February 1, 2025 – Lowered authentication conversation rates for Egypt, Malaysia, Nigeria, Pakistan, Saudi Arabia, South Africa, and the United Arab Emirates.
+Effective November 1, 2024 – Service conversations are now free for all businesses.
+Effective October 1, 2024 – Updated marketing conversation rates in India, Saudi Arabia, the United Arab Emirates, and the United Kingdom.
+Effective August 1, 2024 – Lowered utility conversation rates.
+Authentication-international rates
+Specific countries have an authentication-international rate. Our rate cards reflect these rates. See Authentication-International rates to learn about these rates and if they apply to you.
+Country calling codes
+Charges for conversations are based on the country calling code of the recipient WhatsApp phone number. The table below shows how we map country calling codes to countries or regions. If a country is not listed below, it maps to Other.
+This information is also available in a CSV file:
+Country Calling Codes and Regional Rate Mapping CSV
+
+
+Markets	Calling Code
+(and network prefix if applicable)
+Countries
+Argentina
+
+Brazil
+
+Chile
+
+Colombia
+
+Egypt
+
+France
+
+Germany
+
+India
+
+Indonesia
+
+Israel
+
+Italy
+
+Malaysia
+
+Mexico
+
+Netherlands
+
+Nigeria
+
+Pakistan
+
+Peru
+
+Russia
+
+Saudi Arabia
+
+South Africa
+
+Spain
+
+Turkey
+
+United Arab Emirates
+
+United Kingdom
+
+54
+
+55
+
+56
+
+57
+
+20
+
+33
+
+49
+
+91
+
+62
+
+972
+
+39
+
+60
+
+52
+
+31
+
+234
+
+92
+
+51
+
+7
+
+966
+
+27
+
+34
+
+90
+
+971
+
+44
+North America
+Canada
+
+United States
+
+1
+
+1
+Rest of Africa
+Algeria
+
+Angola
+
+Benin
+
+Botswana
+
+Burkina Faso
+
+Burundi
+
+Cameroon
+
+Chad
+
+Republic of the Congo (Brazzaville)
+
+Eritrea
+
+Ethiopia
+
+Gabon
+
+Gambia
+
+Ghana
+
+Guinea-Bissau
+
+Ivory Coast
+
+Kenya
+
+Lesotho
+
+Liberia
+
+Libya
+
+Madagascar
+
+Malawi
+
+Mali
+
+Mauritania
+
+Morocco
+
+Mozambique
+
+Namibia
+
+Niger
+
+Rwanda
+
+Senegal
+
+Sierra Leone
+
+Somalia
+
+South Sudan
+
+Sudan
+
+Swaziland
+
+Tanzania
+
+Togo
+
+Tunisia
+
+Uganda
+
+Zambia
+
+Zimbabwe
+
+213
+
+244
+
+229
+
+267
+
+226
+
+257
+
+237
+
+235
+
+242
+
+291
+
+251
+
+241
+
+220
+
+233
+
+245
+
+225
+
+254
+
+266
+
+231
+
+218
+
+261
+
+265
+
+223
+
+222
+
+212
+
+258
+
+264
+
+227
+
+250
+
+221
+
+232
+
+252
+
+211
+
+249
+
+268
+
+255
+
+228
+
+216
+
+256
+
+260
+
+263
+Rest of Asia Pacific
+Afghanistan
+
+Australia
+
+Bangladesh
+
+Cambodia
+
+China
+
+Hong Kong
+
+Japan
+
+Laos
+
+Mongolia
+
+Nepal
+
+New Zealand
+
+Papua New Guinea
+
+Philippines
+
+Singapore
+
+Sri Lanka
+
+Taiwan
+
+Tajikistan
+
+Thailand
+
+Turkmenistan
+
+Uzbekistan
+
+Vietnam
+
+93
+
+61
+
+880
+
+855
+
+86
+
+852
+
+81
+
+856
+
+976
+
+977
+
+64
+
+675
+
+63
+
+65
+
+94
+
+886
+
+992
+
+66
+
+993
+
+998
+
+84
+Rest of Central & Eastern Europe
+Albania
+
+Armenia
+
+Azerbaijan
+
+Belarus
+
+Bulgaria
+
+Croatia
+
+Czech Republic
+
+Georgia
+
+Greece
+
+Hungary
+
+Latvia
+
+Lithuania
+
+Moldova
+
+North Macedonia
+
+Poland
+
+Romania
+
+Serbia
+
+Slovakia
+
+Slovenia
+
+Ukraine
+
+355
+
+374
+
+994
+
+375
+
+359
+
+385
+
+420
+
+995
+
+30
+
+36
+
+371
+
+370
+
+373
+
+389
+
+48
+
+40
+
+381
+
+421
+
+386
+
+380
+Rest of Western Europe
+Austria
+
+Belgium
+
+Denmark
+
+Finland
+
+Ireland
+
+Norway
+
+Portugal
+
+Sweden
+
+Switzerland
+
+43
+
+32
+
+45
+
+358
+
+353
+
+47
+
+351
+
+46
+
+41
+Rest of Latin America
+Bolivia
+
+Costa Rica
+
+Dominican Republic
+
+Ecuador
+
+El Salvador
+
+Guatemala
+
+Haiti
+
+Honduras
+
+Jamaica
+
+Nicaragua
+
+Panama
+
+Paraguay
+
+Puerto Rico
+
+Uruguay
+
+Venezuela
+
+591
+
+506
+
+1 (809, 829, 849)
+
+593
+
+503
+
+502
+
+509
+
+504
+
+1 (658, 876)
+
+505
+
+507
+
+595
+
+1 (787, 939)
+
+598
+
+58
+Rest of Middle East
+Bahrain
+
+Iraq
+
+Jordan
+
+Kuwait
+
+Lebanon
+
+Oman
+
+Qatar
+
+Yemen
+
+973
+
+964
+
+962
+
+965
+
+961
+
+968
+
+974
+
+967
+Other
+All other countries
+
+Varies by country
+Volume tiers
+You can unlock lower utility and authentication rates based on the number of messages you send in a month.
+Tiering accrual
+Messages are aggregated at the business portfolio level, across all WhatsApp Business Accounts (WABAs) owned by the portfolio — To determine what tier rates may apply in a given month for a given market–category pair, we aggregate messages across all of a business portfolio’s WABAs for each market-category pair (e.g., Brazil–authentication, Brazil–utility, India–authentication, etc.).
+Only messages that are charged count toward the tiers — Thus, the following messages do not count:
+Utility templates delivered to WhatsApp users within an open customer service window.
+Utility templates delivered within a free entry point window.
+Volume tiers will be determined solely by Meta — All insights data is approximate due to small variations in data processing. Undue reliance should not be placed on insights data.
+Key dynamics
+Tiers are market–category specific — Volume tiers are aligned to our rate cards and differ by market (e.g., Brazil or Rest of Latin America) and category (utility, authentication).
+Rates are tier-specific — When a business sends enough messages at a given market–category pair to reach the next tier, they unlock the rate of the next tier, specifically for messages in that tier. This rate applies across all of their WABAs.
+Tiers reset monthly — At the start of the next month (12am WABA timezone), message count resets to 0 and businesses begin to accrue messages toward that month.
+Volume tiers examples
+The table below is illustrative and only highlights the dynamics of volume tiers. Please refer to our rate cards to see what we charge.
+
+Below are several examples to highlight how our tiers work and what we would charge in a given month, for a given market–category. These examples refer to the illustrative table above:
+Example 1: A business that sends a total of B authentication messages in a month to India is charged:
+List rate for the first A messages.
+Tier rate 1 for messages A+1 to B.
+Total charges for that month = Rate per tier 𝗑 messages in each tier.
+Example 2: A business that starts to be charged our authentication-international rates on the 15th day of the month:
+Day 1 to 14 of that month: Volume tiers apply on the authentication rate.
+Day 15 onward of that month: Volume tiers apply on the authentication-international rate, with messages continuing to accrue in that month. For example, if a business has already reached the Tier 2, the business would be charged Tier 2’s authentication-international rate:
+Example 3: A business has 3 WABAs sending authentication messages to India. For WABA A, it is still July 31 based on their timezone. For WABAs B and C, it is already August 1 based on their timezone. For July, the business is already being charged Tier Rate 1.
+The business portfolio will be accruing toward tiers for both July (via WABA A) and August (via WABAs B, C) for a period of time.
+The business can reach the next tier for July, via WABA A. If that happens, messages for the remainder of July for WABA A will be charged Tier Rate 2.
+Example 4: A business has 3 WABAs, integrated across 2 solution providers. Provider 1 sends the first B messages in a given month, and provider 2 starts sending messages as of when the business is in the 3rd tier. The business does not send enough messages that month to reach the next tier. What we would charge each provider:
+Provider 1: List rate for A messages, then Tier Rate 1 from A+1 to B, and Tier Rate 2 for B+1 to C.
+Provider 2: Tier Rate 2 across all of their messages.
+Tiering webhooks
+Starting October 1, 2025, an account_update webhook with event set to VOLUME_BASED_PRICING_TIER_UPDATE will be triggered when your WhatsApp Business Account reaches a new volume tier, in any market, in a given month. This complements our pricing_analytics endpoint, which will continue to provide intra-month tiering progress and tiering information for delivered messages.
+Example webhook:
+{
+  "object": "whatsapp_business_account",
+  "entry": [
+    {
+      "id": "102290129340398",
+      "time": 1743451903,
+      "changes": [
+        {
+          "value": {
+            "volume_tier_info": {
+                "tier_update_time": 1743451903,
+                "pricing_category": "UTILITY",
+                "tier": "25000001:50000000",
+                "effective_month": "2025-11",
+                "region": "India"
+            },
+            "event": "VOLUME_BASED_PRICING_TIER_UPDATE"
+          },
+          "field": "account_update"
+        }
+      ]
+    }
+  ]
+}
+
+tier_update_time tells when your WABA reached a higher volume tier (Unix timestamp).
+pricing_category tells you the template category for which your new volume tier rate applies.
+tier tells you the new volume tier’s lower and upper bounds.
+effective_month tells you the month in which your new volume tier rate is in effect.
+region tells you the WhatsApp user country/region for which your new volume tier rate applies.
+Note that it’s possible for multiple account_update webhooks to be triggered that describe the same tier switch event. In these cases, use the webhook with the smaller tier_update_time Unix timestamp as the official webhook.
+Tiering analytics
+You can get volume tier information via template analytics.
+Free non-template messages
+Non-template messages, which can only be sent within an open customer service window, are free. These messages will have type set to free_customer_service in the pricing object of status messages webhooks:
+"pricing": {
+  "billable": false,
+  "pricing_model": "PMP",
+  "type": "free_customer_service",
+  "category": "service"
+}
+
+Note that for On-Premises API users running version 2.60 and lower, type is omitted, so a category of service and billable set to false identifies these messages.
+Free utility template messages
+Utility template messages sent within an open customer service window are free. These messages will have type set to free_customer_service and category set to utility in the pricing object of status messages webhooks:
+"pricing": {
+  "billable": false,
+  "pricing_model": "PMP",
+  "type": "free_customer_service",
+  "category": "utility"
+}
+
+Note that for On-Premises API users running version 2.60 and lower, type is omitted, so a category of utility and billable set to false identifies these messages.
+Edge case
+If you send a message to a WhatsApp user prior July 1, 2025 (which is when we switched from conversation-based pricing to per-message pricing), a utility conversation is opened between you and a user that spans the switch to per-message pricing (the conversation was opened before the switch but won’t close until after the switch). In this case, utility templates sent to the user after the switch while the conversation is open will be free, but attributed to the open conversation. In status messages webhooks, these messages will have a pricing_model of CBP and the utility conversation ID will be assigned to conversation.id. Once the conversation closes, subsequent utility messages will use per-message pricing, which will be reflected in new webhooks.
+Free Entry Point windows
+If a WhatsApp user messages you via a Click to WhatsApp Ad or Facebook Page Call-to-Action button using a device running our Android or iOS app (our desktop and web apps are not supported):
+A 24-hour customer service window is opened (as normal).
+If you respond within 24 hours using any type of message, the message will be free, and a Free Entry Point (“FEP”) window will be opened, starting from the time when you responded.
+FEP windows remain open for 72 hours. While open, you can send any type of message to the user at no charge. Note, however, that the customer service window is independent of the FEP window, so if the customer service window closes, you will only be able to send template messages.
+Analytics
+Use the pricing_analytics field to get per-message pricing breakdowns and tiering information for delivered messages.
+Webhooks
+Billable messages have type set to regular in the pricing object of status messages webhooks:
+"pricing": {
+  "billable": true,
+  "pricing_model": "PMP",
+  "type": "regular",
+  "category": "<PRICING_CATEGORY>"
+}
+
+The <PRICING_CATEGORY> tells you what rate was applied (e.g. marketing). See the status messages webhook reference for a list of possible values.
+Note that currently, tiering information is not included in any webhooks. Use the pricing_analytics field to get tiering information for delivered messages.
+Billing
+Billing and billing-related actions are handled through the Meta Business Suite. See About Billing For Your WhatsApp Business Account for more information.
+WhatsApp Business Calling API pricing
+The WhatsApp Business Calling API has different pricing. See our Calling API pricing document to learn more.
+Conversation-based pricing
+Conversation-based pricing is deprecated. It was replaced with per-message pricing on July 1, 2025.

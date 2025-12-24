@@ -1,0 +1,63 @@
+Access tokens
+Updated: Nov 20, 2025
+The platform supports the following access token types. The type you use depends on who will be using your application, and whether or not you are a solution provider.
+If you are a direct developer, meaning only you or your business will be accessing your own data, use a System User access token.
+If you are a Tech Provider, use a Business Integration System User access token.
+If you are a Solution Partner, use System User access tokens to share your line of credit with newly onboarded customers, and Business Integration System User access tokens for everything else.
+System user access tokens
+System user access tokens (“system tokens”) represent you, your business or organization, or people within your business or organization. The main advantage of these tokens is that they are long-lived and can represent automated services within your business that don’t require any user input.
+System tokens rely on system users. Most endpoints check if the user identified by the token has access to the queried resource. If the user does not have access to the resource, the request will be rejected with error code 200.
+System users can be admins or employees.
+Admin system users
+By default, admin system users have full access to all WABAs and their assets owned by or shared with you or your business portfolio.
+Admin system users are useful if your app needs access to all of the business portfolio’s assets, without having to manually grant business asset access to each asset whenever it is created, or shared with your business portfolio.
+Note that you can override an admin system user’s default business asset access by granting partial access on a per-WABA basis. See Business Asset Access to learn how to set and override access.
+Employee system users
+Employee system users must be granted access to individual WABAs that are owned by, or shared with, your business portfolio. If your app will only need access to a few WABAs that you own, an employee system user should be sufficient.
+Once created, you must grant Partial or Full business asset access to each WABA that the system user needs to access.
+Generating System User Access Tokens
+To generate a system token, access the Business settings panel and then click System Users:
+
+Click the +Add button, and in the Create system user window that appears, enter a system user name and assign it an Admin or Employee role:
+
+Once the admin system user has been created, it will appear in the list of system users. Click the system user’s name to display the asset assignment overlay:
+
+Click the Assign assets button to display the Select assets and assign permissions window:
+
+Select your app and grant your system user the Manage app permission, then click the Assign assets button to confirm and dismiss the window.
+Back in the System Users panel, reload the page to confirm that your system user has been granted Full control of your app. It may take a few minutes for the permissions to be granted, so reload the page after a few minutes if your app doesn’t appear as an assigned asset. Once the asset has been assigned, it should look like this:
+
+Once you see that your system user has been granted full control of your app, in the asset assignment overlay, click the Generate token button. In the window that appears, select your app, choose a token expiration preference, and assign your app these three Graph API permissions:
+business_management
+whatsapp_business_management
+whatsapp_business_messaging
+You can search for “business” to find these permissions quickly:
+
+Click the Generate token button and copy the token when it appears.
+Business Integration system user access tokens
+Business Integration system user access tokens (“business tokens”) are scoped to individual onboarded customers and should be used by Tech Providers and Solution Partners when accessing onboarded customer data.
+These tokens are useful for apps that perform programmatic, automated actions on customer WABAs, without having to rely on input from an app user, or requiring future re-authentication.
+To generate a Business Integration System User access tokens, you must implement Embedded Signup (configured with Facebook Login for Businesses) and exchange the code returned to you when a customer completes the flow.
+See the Embedded Signup document and the Business Integration System User access tokens document to learn more about these tokens and how they are generated.
+User access tokens
+Although User access tokens are supported and can be used by all app developers, you likely will only use them when you first use the App Dashboard to send your first test message. As you develop your app, however, you most likely will switch to a System User access token (and eventually a Business System User access token, if you are Tech Provider or Solution Provider). This is because user access tokens expire quickly, so you will have to keep generating a new one every few hours.
+There are several ways to generate a User access token:
+Access the App Dashboard > WhatsApp > API setup panel. This panel always generates a new User access token whenever you visit it. The token is automatically scoped to your user, since you are signed into your developer account when you access the panel.
+Use Graph API Explorer.
+Implement Facebook Login.
+Using tokens in requests
+When making API requests, include your token in an authorization request header, preceded by Bearer. For example:
+curl 'https://graph.facebook.com/v18.0/102290129340398/message_templates' \
+-H 'Authorization: Bearer EAAJB...' \
+
+Business asset access
+After creating a system user, you must set business asset access levels. Many endpoints require the system user whose token is included in API requests to have either Partial or Full business asset access to the WABA being queried (or its assets). If the system user does not have this access, these endpoints will return error code 200.
+Note that if you set a system user’s business asset access on a WABA to Partial access, you can further restrict access to certain assets or actions on the WABA. For example, if you have a large business and want a certain department to only have read access to a WABA’s template and business phone number data, you could create a system user for that department and set granular access to view only for that data.
+To set business asset access on a WABA:
+Sign into Meta Business Suite.
+Locate your business portfolio in the top-left dropdown menu and click its Settings (gear) icon.
+Navigate to Accounts > WhatsApp Accounts.
+Select the appropriate WABA.
+Select the WhatsApp Account Access tab.
+Click the +Add people button.
+Select the appropriate system user and assign appropriate access levels on the WABA.

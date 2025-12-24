@@ -72,8 +72,8 @@ async function addCallbackFields() {
       console.log('✓ callback_completed column already exists');
     }
 
-    // Add callback_completed_at if not exists
-    if (!existingColumns.includes('callback_completed_at')) {
+     // Add callback_completed_at if not exists
+     if (!existingColumns.includes('callback_completed_at')) {
       console.log('➕ Adding callback_completed_at column...');
       await sequelize.query(`
         ALTER TABLE calls 
