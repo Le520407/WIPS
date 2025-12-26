@@ -24,6 +24,9 @@ router.get('/', getCalls);
 // Get call statistics
 router.get('/stats', getCallStats);
 
+// Get unviewed missed calls count (must be before /:id route)
+router.get('/unviewed-count', getUnviewedMissedCallsCount);
+
 // Get specific call
 router.get('/:id', getCall);
 
@@ -44,8 +47,5 @@ router.post('/pre-accept', preAcceptCall);
 
 // Mark calls as viewed
 router.post('/mark-viewed', markCallsAsViewed);
-
-// Get unviewed missed calls count
-router.get('/unviewed-count', getUnviewedMissedCallsCount);
 
 export default router;
