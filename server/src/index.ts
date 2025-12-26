@@ -85,7 +85,7 @@ app.use('/api/two-step-verification', twoStepVerificationRoutes);
 app.use('/api/phone-registration', phoneRegistrationRoutes);
 app.use('/api', websiteRoutes);
 app.use('/api/webhooks', webhookConfigRoutes);
-app.use('/webhooks', webhookRoutes);
+app.use('/api/webhook', webhookRoutes);
 // Public API routes (requires API key authentication)
 app.use('/api/v1', publicApiRoutes);
 // Usage statistics routes
