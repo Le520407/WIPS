@@ -1,54 +1,58 @@
 const { Sequelize } = require('sequelize');
-require('dotenv').config();
 
-const sequelize = new Sequelize(
-  process.env.DB_NAME || 'whatsapp_platform',
-  process.env.DB_USER || 'whatsapp_user',
-  process.env.DB_PASSWORD || 'password',
-  {
-    host: process.env.DB_HOST || 'localhost',
-    port: parseInt(process.env.DB_PORT || '5432'),
-    dialect: 'postgres',
-    logging: console.log,
-  }
-);
+const sequelize = new Sequelize('whatsapp_platform', 'whatsapp_user', '123', {
+  host: 'localhost',
+  dialect: 'postgres',
+  logging: false,
+});
 
 async function addReactionFields() {
   try {
+    console.log('🔄 Connecting to database...');
     await sequelize.authenticate();
     console.log('✅ Database connected');
 
-    // Add reaction_emoji field
-    try {
+    console.log('📋 Checking if reaction fields exist...');
+    
+    // Check if reaction_emoji column exists
+    const [emojiResults] = await sequelize.query(`
+      SELECT column_name
+      FROM information_schema.columns
+      WHERE table_name = 'messages'
+      AND column_name = 'reaction_emoji';
+    `);
+
+    if (emojiResults.length === 0) {
+      console.log('➕ Adding reaction_emoji column...');
       await sequelize.query(`
-        ALTER TABLE messages 
-        ADD COLUMN reaction_emoji VARCHAR(10) NULL
+        ALTER TABLE messages
+        ADD COLUMN reaction_emoji VARCHAR(10);
       `);
-      console.log('✅ Added reaction_emoji field');
-    } catch (error) {
-      if (error.message.includes('already exists') || error.original?.code === '42701') {
-        console.log('ℹ️  reaction_emoji field already exists');
-      } else {
-        throw error;
-      }
+      console.log('✅ reaction_emoji column added');
+    } else {
+      console.log('✅ reaction_emoji column already exists');
     }
 
-    // Add reaction_message_id field
-    try {
+    // Check if reaction_message_id column exists
+    const [messageIdResults] = await sequelize.query(`
+      SELECT column_name
+      FROM information_schema.columns
+      WHERE table_name = 'messages'
+      AND column_name = 'reaction_message_id';
+    `);
+
+    if (messageIdResults.length === 0) {
+      console.log('➕ Adding reaction_message_id column...');
       await sequelize.query(`
-        ALTER TABLE messages 
-        ADD COLUMN reaction_message_id VARCHAR(255) NULL
+        ALTER TABLE messages
+        ADD COLUMN reaction_message_id VARCHAR(255);
       `);
-      console.log('✅ Added reaction_message_id field');
-    } catch (error) {
-      if (error.message.includes('already exists') || error.original?.code === '42701') {
-        console.log('ℹ️  reaction_message_id field already exists');
-      } else {
-        throw error;
-      }
+      console.log('✅ reaction_message_id column added');
+    } else {
+      console.log('✅ reaction_message_id column already exists');
     }
 
-    console.log('\n✅ All reaction fields added successfully!');
+    console.log('🎉 All done!');
     process.exit(0);
   } catch (error) {
     console.error('❌ Error:', error);
