@@ -175,17 +175,74 @@ export const embeddedSignup = async (req: Request, res: Response) => {
       };
     }
     
+    // Get WhatsApp Business Account and Phone Number info
+    let wabaId = process.env.WHATSAPP_BUSINESS_ACCOUNT_ID;
+    let phoneNumberId = process.env.WHATSAPP_PHONE_NUMBER_ID;
+    
+    try {
+      const axios = require('axios');
+      
+      // Get businesses
+      const businessesResponse = await axios.get(
+        'https://graph.facebook.com/v18.0/me/businesses',
+        { params: { access_token: accessToken } }
+      );
+      
+      if (businessesResponse.data.data && businessesResponse.data.data.length > 0) {
+        const business = businessesResponse.data.data[0];
+        console.log('📊 Found business:', business.name);
+        
+        // Get WhatsApp Business Accounts
+        const wabaResponse = await axios.get(
+          `https://graph.facebook.com/v18.0/${business.id}/client_whatsapp_business_accounts`,
+          { params: { access_token: accessToken } }
+        );
+        
+        if (wabaResponse.data.data && wabaResponse.data.data.length > 0) {
+          const waba = wabaResponse.data.data[0];
+          wabaId = waba.id;
+          console.log('📱 Found WABA:', wabaId);
+          
+          // Get phone numbers
+          const phoneResponse = await axios.get(
+            `https://graph.facebook.com/v18.0/${wabaId}/phone_numbers`,
+            { params: { access_token: accessToken } }
+          );
+          
+          if (phoneResponse.data.data && phoneResponse.data.data.length > 0) {
+            const phone = phoneResponse.data.data[0];
+            phoneNumberId = phone.id;
+            console.log('📞 Found Phone Number:', phone.display_phone_number, '(ID:', phoneNumberId, ')');
+          }
+        }
+      }
+    } catch (apiError) {
+      console.error('⚠️ Could not fetch WABA/Phone info, using defaults:', apiError.message);
+    }
+    
     // Find or create user in database
-    const [user] = await User.findOrCreate({
+    const [user, created] = await User.findOrCreate({
       where: { facebook_id: userInfo.id },
       defaults: {
         facebook_id: userInfo.id,
         name: userInfo.name,
         email: userInfo.email,
         access_token: accessToken,
-        whatsapp_account_id: process.env.WHATSAPP_BUSINESS_ACCOUNT_ID,
+        whatsapp_account_id: wabaId,
+        phone_number_id: phoneNumberId,
       },
     });
+
+    // Update existing user with new info
+    if (!created) {
+      await user.update({
+        access_token: accessToken,
+        whatsapp_account_id: wabaId,
+        phone_number_id: phoneNumberId,
+        last_login: new Date(),
+      });
+      console.log('✅ Updated existing user with new WABA and Phone Number');
+    }
 
     const token = jwt.sign(
       { id: user.id, facebookId: user.facebook_id },
@@ -194,11 +251,17 @@ export const embeddedSignup = async (req: Request, res: Response) => {
     );
 
     console.log('✅ Embedded Signup successful:', user.email);
+    console.log('   WABA ID:', wabaId);
+    console.log('   Phone Number ID:', phoneNumberId);
 
     res.json({ 
       token, 
       user: user.toJSON(),
-      message: 'WhatsApp Business connected successfully!' 
+      message: 'WhatsApp Business connected successfully!',
+      whatsapp_info: {
+        waba_id: wabaId,
+        phone_number_id: phoneNumberId
+      }
     });
   } catch (error) {
     console.error('Embedded signup error:', error);

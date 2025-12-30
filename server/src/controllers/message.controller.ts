@@ -67,7 +67,8 @@ export const sendMessage = async (req: AuthRequest, res: Response) => {
     // Normalize phone number (remove + if present for storage)
     const normalizedPhone = to.replace(/^\+/, '');
 
-    const result = await sendWhatsAppMessage(to, message, type, mediaUrl, caption);
+    // Send message using user's WhatsApp config
+    const result = await sendWhatsAppMessage(to, message, type, mediaUrl, caption, undefined, req.user!.id);
     
     // Save message to database
     const savedMessage = await Message.create({

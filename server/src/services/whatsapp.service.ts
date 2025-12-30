@@ -1,12 +1,45 @@
 import axios from 'axios';
+import User from '../models/User';
 
 const WHATSAPP_API_URL = process.env.WHATSAPP_API_URL || 'https://graph.facebook.com';
 const API_VERSION = process.env.WHATSAPP_API_VERSION || 'v18.0';
-const PHONE_NUMBER_ID = process.env.WHATSAPP_PHONE_NUMBER_ID;
-const ACCESS_TOKEN = process.env.WHATSAPP_ACCESS_TOKEN;
 
-export const sendWhatsAppMessage = async (to: string, message: string, type: string = 'text', mediaUrl?: string, caption?: string, contextMessageId?: string) => {
+// Helper function to get user's WhatsApp config
+export const getUserWhatsAppConfig = async (userId: string) => {
+  const user = await User.findByPk(userId);
+  
+  if (!user) {
+    throw new Error('User not found');
+  }
+  
+  return {
+    phoneNumberId: user.phone_number_id || process.env.WHATSAPP_PHONE_NUMBER_ID,
+    accessToken: user.access_token || process.env.WHATSAPP_ACCESS_TOKEN,
+    wabaId: user.whatsapp_account_id || process.env.WHATSAPP_BUSINESS_ACCOUNT_ID
+  };
+};
+
+export const sendWhatsAppMessage = async (
+  to: string, 
+  message: string, 
+  type: string = 'text', 
+  mediaUrl?: string, 
+  caption?: string, 
+  contextMessageId?: string,
+  userId?: string  // Add userId parameter
+) => {
   try {
+    // Get user-specific config or fall back to env variables
+    let phoneNumberId = process.env.WHATSAPP_PHONE_NUMBER_ID;
+    let accessToken = process.env.WHATSAPP_ACCESS_TOKEN;
+    
+    if (userId) {
+      const config = await getUserWhatsAppConfig(userId);
+      phoneNumberId = config.phoneNumberId;
+      accessToken = config.accessToken;
+      console.log(`📱 Using user's WhatsApp config - Phone: ${phoneNumberId}`);
+    }
+    
     let messageBody: any = {
       messaging_product: 'whatsapp',
       recipient_type: 'individual',
@@ -60,11 +93,11 @@ export const sendWhatsAppMessage = async (to: string, message: string, type: str
     }
 
     const response = await axios.post(
-      `${WHATSAPP_API_URL}/${API_VERSION}/${PHONE_NUMBER_ID}/messages`,
+      `${WHATSAPP_API_URL}/${API_VERSION}/${phoneNumberId}/messages`,
       messageBody,
       {
         headers: {
-          'Authorization': `Bearer ${ACCESS_TOKEN}`,
+          'Authorization': `Bearer ${accessToken}`,
           'Content-Type': 'application/json'
         }
       }
@@ -77,10 +110,27 @@ export const sendWhatsAppMessage = async (to: string, message: string, type: str
   }
 };
 
-export const sendTemplateMessage = async (to: string, templateName: string, languageCode: string, components?: any[]) => {
+export const sendTemplateMessage = async (
+  to: string, 
+  templateName: string, 
+  languageCode: string, 
+  components?: any[],
+  userId?: string  // Add userId parameter
+) => {
   try {
+    // Get user-specific config or fall back to env variables
+    let phoneNumberId = process.env.WHATSAPP_PHONE_NUMBER_ID;
+    let accessToken = process.env.WHATSAPP_ACCESS_TOKEN;
+    
+    if (userId) {
+      const config = await getUserWhatsAppConfig(userId);
+      phoneNumberId = config.phoneNumberId;
+      accessToken = config.accessToken;
+      console.log(`📱 Using user's WhatsApp config - Phone: ${phoneNumberId}`);
+    }
+    
     const response = await axios.post(
-      `${WHATSAPP_API_URL}/${API_VERSION}/${PHONE_NUMBER_ID}/messages`,
+      `${WHATSAPP_API_URL}/${API_VERSION}/${phoneNumberId}/messages`,
       {
         messaging_product: 'whatsapp',
         to,
@@ -93,7 +143,7 @@ export const sendTemplateMessage = async (to: string, templateName: string, lang
       },
       {
         headers: {
-          'Authorization': `Bearer ${ACCESS_TOKEN}`,
+          'Authorization': `Bearer ${accessToken}`,
           'Content-Type': 'application/json'
         }
       }
