@@ -52,37 +52,6 @@ const DemoLogin = () => {
     }
   };
 
-  const handleTestUserLogin = async () => {
-    setLoading(true);
-    
-    try {
-      const response = await fetch('/api/auth/test-login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          email: 'test@whatsapp-platform.com'
-        })
-      });
-      
-      if (!response.ok) {
-        throw new Error('Test user login failed');
-      }
-      
-      const data = await response.json();
-      
-      localStorage.removeItem('demo_mode');
-      localStorage.removeItem('demo_user');
-      localStorage.setItem('token', data.token);
-      
-      await login(data.token);
-      navigate('/app/dashboard');
-    } catch (error) {
-      console.error('Test user login error:', error);
-      alert('Failed to login. Make sure the server is running.');
-      setLoading(false);
-    }
-  };
-
   const handleEmbeddedSignup = () => {
     setLoading(true);
     
@@ -239,21 +208,6 @@ const DemoLogin = () => {
                 </div>
               </>
             )}
-          </button>
-
-          {/* Development Mode */}
-          <button
-            onClick={handleTestUserLogin}
-            disabled={loading}
-            className="w-full flex items-center justify-center px-6 py-4 bg-white border-2 border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 hover:border-gray-400 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
-          >
-            <svg className="w-5 h-5 mr-3" fill="currentColor" viewBox="0 0 20 20">
-              <path fillRule="evenodd" d="M12.316 3.051a1 1 0 01.633 1.265l-4 12a1 1 0 11-1.898-.632l4-12a1 1 0 011.265-.633zM5.707 6.293a1 1 0 010 1.414L3.414 10l2.293 2.293a1 1 0 11-1.414 1.414l-3-3a1 1 0 010-1.414l3-3a1 1 0 011.414 0zm8.586 0a1 1 0 011.414 0l3 3a1 1 0 010 1.414l-3 3a1 1 0 11-1.414-1.414L16.586 10l-2.293-2.293a1 1 0 010-1.414z" clipRule="evenodd" />
-            </svg>
-            <div className="text-left">
-              <div className="font-semibold">Development Mode</div>
-              <div className="text-xs text-gray-500">For testing purposes</div>
-            </div>
           </button>
         </div>
 
