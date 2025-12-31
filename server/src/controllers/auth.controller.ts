@@ -150,14 +150,37 @@ export const embeddedSignup = async (req: Request, res: Response) => {
       return res.status(400).json({ error: 'No authorization code provided' });
     }
     
-    // Embedded Signup returns a short-lived access token directly (not a code)
-    // The "code" parameter is actually already an access token
-    let accessToken = code;
+    const axios = require('axios');
+    let accessToken: string;
     
-    // 🔄 Exchange short-lived token for long-lived token (60 days)
-    console.log('🔄 Exchanging for long-lived token...');
+    // Step 1: Exchange authorization code for short-lived access token
+    console.log('🔄 Step 1: Exchanging authorization code for access token...');
     try {
-      const axios = require('axios');
+      const tokenResponse = await axios.get('https://graph.facebook.com/v18.0/oauth/access_token', {
+        params: {
+          client_id: process.env.META_APP_ID,
+          client_secret: process.env.META_APP_SECRET,
+          code: code,
+          redirect_uri: `${process.env.SERVER_URL || 'https://wa.acestartechsi.com'}/api/auth/facebook/callback`
+        }
+      });
+      
+      if (!tokenResponse.data.access_token) {
+        throw new Error('No access token in response');
+      }
+      
+      accessToken = tokenResponse.data.access_token;
+      console.log('✅ Got short-lived access token');
+    } catch (codeError: any) {
+      console.error('❌ Failed to exchange code for token:', codeError.response?.data || codeError.message);
+      return res.status(400).json({ 
+        error: 'Failed to exchange authorization code. Please try again.' 
+      });
+    }
+    
+    // Step 2: Exchange short-lived token for long-lived token (60 days)
+    console.log('🔄 Step 2: Exchanging for long-lived token...');
+    try {
       const longTokenResponse = await axios.get('https://graph.facebook.com/v18.0/oauth/access_token', {
         params: {
           grant_type: 'fb_exchange_token',
@@ -173,7 +196,7 @@ export const embeddedSignup = async (req: Request, res: Response) => {
         console.log(`✅ Got long-lived token (expires in ${Math.floor(expiresIn / 86400)} days)`);
       }
     } catch (tokenError: any) {
-      console.log('⚠️  Token exchange failed:', tokenError.response?.data || tokenError.message);
+      console.log('⚠️  Long-lived token exchange failed:', tokenError.response?.data || tokenError.message);
       console.log('   Continuing with short-lived token...');
     }
     
