@@ -143,7 +143,7 @@ export const embeddedSignup = async (req: Request, res: Response) => {
   try {
     const { code } = req.body;
     
-    console.log('📱 Embedded Signup initiated with code:', code);
+    console.log('📱 Embedded Signup/Login initiated with code:', code);
     
     // Exchange code for access token (if needed)
     let accessToken = code;
@@ -230,18 +230,22 @@ export const embeddedSignup = async (req: Request, res: Response) => {
         access_token: accessToken,
         whatsapp_account_id: wabaId,
         phone_number_id: phoneNumberId,
+        status: 'active',
       },
     });
 
-    // Update existing user with new info
+    // Update existing user with new info (this handles both login and config updates)
     if (!created) {
       await user.update({
         access_token: accessToken,
         whatsapp_account_id: wabaId,
         phone_number_id: phoneNumberId,
         last_login: new Date(),
+        status: 'active',
       });
-      console.log('✅ Updated existing user with new WABA and Phone Number');
+      console.log('✅ User logged in and config updated');
+    } else {
+      console.log('✅ New user created via Embedded Signup');
     }
 
     const token = jwt.sign(
@@ -250,22 +254,23 @@ export const embeddedSignup = async (req: Request, res: Response) => {
       { expiresIn: '7d' }
     );
 
-    console.log('✅ Embedded Signup successful:', user.email);
+    const actionMessage = created ? 'Account created successfully!' : 'Logged in successfully!';
+    console.log(`✅ ${actionMessage}`, user.email);
     console.log('   WABA ID:', wabaId);
     console.log('   Phone Number ID:', phoneNumberId);
 
     res.json({ 
       token, 
       user: user.toJSON(),
-      message: 'WhatsApp Business connected successfully!',
+      message: actionMessage,
       whatsapp_info: {
         waba_id: wabaId,
         phone_number_id: phoneNumberId
       }
     });
   } catch (error) {
-    console.error('Embedded signup error:', error);
-    res.status(500).json({ error: 'Embedded signup failed' });
+    console.error('Embedded signup/login error:', error);
+    res.status(500).json({ error: 'Authentication failed' });
   }
 };
 
