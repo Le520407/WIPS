@@ -64,11 +64,11 @@ const DemoLogin = () => {
     window.FB.login(
       function(response: any) {
         if (response.authResponse) {
-          const { accessToken } = response.authResponse;
-          if (accessToken) {
-            handleEmbeddedSignupCallback(accessToken);
+          const { code } = response.authResponse;
+          if (code) {
+            handleEmbeddedSignupCallback(code);
           } else {
-            alert('No access token received. Please try again.');
+            alert('No authorization code received. Please try again.');
             setLoading(false);
           }
         } else {
@@ -78,7 +78,7 @@ const DemoLogin = () => {
       },
       {
         config_id: '3910307729262069',
-        response_type: 'token',  // 改为 token，直接返回 access token
+        response_type: 'code',
         override_default_response_type: true,
         extras: {
           setup: {},
