@@ -143,23 +143,16 @@ export const embeddedSignup = async (req: Request, res: Response) => {
   try {
     const { code } = req.body;
     
-    console.log('📱 Embedded Signup/Login initiated with code:', code);
+    console.log('📱 Embedded Signup/Login initiated');
+    console.log('   Code length:', code?.length || 0);
     
-    // Exchange code for access token (if needed)
-    let accessToken = code;
-    
-    if (code && code.length > 100) {
-      // This is already an access token
-      accessToken = code;
-    } else if (code) {
-      // Exchange code for token
-      try {
-        accessToken = await exchangeFacebookToken(code);
-      } catch (error) {
-        console.log('Using code as token directly');
-        accessToken = code;
-      }
+    if (!code) {
+      return res.status(400).json({ error: 'No authorization code provided' });
     }
+    
+    // Embedded Signup returns a short-lived access token directly (not a code)
+    // The "code" parameter is actually already an access token
+    let accessToken = code;
     
     // 🔄 Exchange short-lived token for long-lived token (60 days)
     console.log('🔄 Exchanging for long-lived token...');
@@ -179,22 +172,22 @@ export const embeddedSignup = async (req: Request, res: Response) => {
         const expiresIn = longTokenResponse.data.expires_in || 5184000; // 60 days default
         console.log(`✅ Got long-lived token (expires in ${Math.floor(expiresIn / 86400)} days)`);
       }
-    } catch (error) {
-      console.log('⚠️  Could not exchange for long-lived token, using short-lived token');
+    } catch (tokenError: any) {
+      console.log('⚠️  Token exchange failed:', tokenError.response?.data || tokenError.message);
+      console.log('   Continuing with short-lived token...');
     }
     
     // Get user info from Facebook
+    console.log('👤 Getting user info from Facebook...');
     let userInfo;
     try {
       userInfo = await getFacebookUserInfo(accessToken);
-    } catch (error) {
-      // If we can't get user info, create a generic user
-      console.log('Creating generic WhatsApp user');
-      userInfo = {
-        id: 'whatsapp_' + Date.now(),
-        name: 'WhatsApp Business User',
-        email: `whatsapp_${Date.now()}@business.com`
-      };
+      console.log('✅ Got user info:', userInfo.name, `(${userInfo.email})`);
+    } catch (userError: any) {
+      console.error('❌ Failed to get user info:', userError.response?.data || userError.message);
+      return res.status(400).json({ 
+        error: 'Invalid access token. Please try the Embedded Signup process again.' 
+      });
     }
     
     // Get WhatsApp Business Account and Phone Number info from Meta API
