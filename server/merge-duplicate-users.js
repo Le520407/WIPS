@@ -29,9 +29,9 @@ async function mergeDuplicateUsers() {
           WHEN access_token IS NOT NULL THEN 'Yes (' || LENGTH(access_token) || ' chars)'
           ELSE 'No'
         END as has_token,
-        created_at
+        "createdAt"
       FROM users
-      ORDER BY created_at ASC;
+      ORDER BY "createdAt" ASC;
     `);
 
     console.log('📊 所有用户：\n');
@@ -41,7 +41,7 @@ async function mergeDuplicateUsers() {
       console.log(`   WABA ID: ${user.waba_id}`);
       console.log(`   Phone Number ID: ${user.phone_number_id || '❌ 未设置'}`);
       console.log(`   Access Token: ${user.has_token}`);
-      console.log(`   Created: ${user.created_at}`);
+      console.log(`   Created: ${user.createdAt}`);
       console.log('');
     });
 
@@ -103,7 +103,7 @@ async function mergeDuplicateUsers() {
           ELSE 'No'
         END as has_token
       FROM users
-      ORDER BY created_at ASC;
+      ORDER BY "createdAt" ASC;
     `);
 
     console.log('📊 最终结果：\n');
