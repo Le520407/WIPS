@@ -161,6 +161,28 @@ export const embeddedSignup = async (req: Request, res: Response) => {
       }
     }
     
+    // 🔄 Exchange short-lived token for long-lived token (60 days)
+    console.log('🔄 Exchanging for long-lived token...');
+    try {
+      const axios = require('axios');
+      const longTokenResponse = await axios.get('https://graph.facebook.com/v18.0/oauth/access_token', {
+        params: {
+          grant_type: 'fb_exchange_token',
+          client_id: process.env.META_APP_ID,
+          client_secret: process.env.META_APP_SECRET,
+          fb_exchange_token: accessToken
+        }
+      });
+      
+      if (longTokenResponse.data.access_token) {
+        accessToken = longTokenResponse.data.access_token;
+        const expiresIn = longTokenResponse.data.expires_in || 5184000; // 60 days default
+        console.log(`✅ Got long-lived token (expires in ${Math.floor(expiresIn / 86400)} days)`);
+      }
+    } catch (error) {
+      console.log('⚠️  Could not exchange for long-lived token, using short-lived token');
+    }
+    
     // Get user info from Facebook
     let userInfo;
     try {
