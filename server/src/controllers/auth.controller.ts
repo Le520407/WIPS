@@ -197,9 +197,9 @@ export const embeddedSignup = async (req: Request, res: Response) => {
       };
     }
     
-    // Get WhatsApp Business Account and Phone Number info
-    let wabaId = process.env.WHATSAPP_BUSINESS_ACCOUNT_ID;
-    let phoneNumberId = process.env.WHATSAPP_PHONE_NUMBER_ID;
+    // Get WhatsApp Business Account and Phone Number info from Meta API
+    let wabaId: string | null = null;
+    let phoneNumberId: string | null = null;
     
     try {
       const axios = require('axios');
@@ -238,14 +238,49 @@ export const embeddedSignup = async (req: Request, res: Response) => {
           }
         }
       }
-    } catch (apiError) {
-      console.error('⚠️ Could not fetch WABA/Phone info, using defaults:', apiError.message);
+    } catch (apiError: any) {
+      console.error('❌ Failed to fetch WABA/Phone info:', apiError.message);
+      return res.status(400).json({ 
+        error: 'Failed to fetch WhatsApp Business Account information. Please try again.' 
+      });
     }
     
-    // Find or create user in database
-    const [user, created] = await User.findOrCreate({
-      where: { facebook_id: userInfo.id },
-      defaults: {
+    // Verify we got the required information
+    if (!wabaId || !phoneNumberId) {
+      console.error('❌ Missing WABA ID or Phone Number ID');
+      return res.status(400).json({ 
+        error: 'Could not find WhatsApp Business Account or Phone Number. Please ensure your account is properly configured.' 
+      });
+    }
+    
+    // Find existing user by WABA ID or Phone Number ID (not email, as email changes each time)
+    let user = await User.findOne({
+      where: {
+        [require('sequelize').Op.or]: [
+          { whatsapp_account_id: wabaId },
+          { phone_number_id: phoneNumberId }
+        ]
+      }
+    });
+
+    let created = false;
+    
+    if (user) {
+      // Update existing user with new token
+      await user.update({
+        facebook_id: userInfo.id,
+        access_token: accessToken,
+        phone_number_id: phoneNumberId,
+        last_login: new Date(),
+        status: 'active',
+      });
+      console.log('✅ Existing user found and token updated!');
+      console.log(`   User: ${user.name} (${user.email})`);
+      console.log(`   WABA ID: ${user.whatsapp_account_id}`);
+      console.log(`   Phone Number ID: ${phoneNumberId}`);
+    } else {
+      // Create new user
+      user = await User.create({
         facebook_id: userInfo.id,
         name: userInfo.name,
         email: userInfo.email,
@@ -253,21 +288,12 @@ export const embeddedSignup = async (req: Request, res: Response) => {
         whatsapp_account_id: wabaId,
         phone_number_id: phoneNumberId,
         status: 'active',
-      },
-    });
-
-    // Update existing user with new info (this handles both login and config updates)
-    if (!created) {
-      await user.update({
-        access_token: accessToken,
-        whatsapp_account_id: wabaId,
-        phone_number_id: phoneNumberId,
-        last_login: new Date(),
-        status: 'active',
       });
-      console.log('✅ User logged in and config updated');
-    } else {
+      created = true;
       console.log('✅ New user created via Embedded Signup');
+      console.log(`   Email: ${userInfo.email}`);
+      console.log(`   WABA ID: ${wabaId}`);
+      console.log(`   Phone Number ID: ${phoneNumberId}`);
     }
 
     const token = jwt.sign(
