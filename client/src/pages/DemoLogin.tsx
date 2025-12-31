@@ -64,8 +64,13 @@ const DemoLogin = () => {
     window.FB.login(
       function(response: any) {
         if (response.authResponse) {
-          const { code, accessToken } = response.authResponse;
-          handleEmbeddedSignupCallback(code || accessToken);
+          const { accessToken } = response.authResponse;
+          if (accessToken) {
+            handleEmbeddedSignupCallback(accessToken);
+          } else {
+            alert('No access token received. Please try again.');
+            setLoading(false);
+          }
         } else {
           alert('WhatsApp connection was cancelled. Please try again.');
           setLoading(false);
@@ -73,7 +78,7 @@ const DemoLogin = () => {
       },
       {
         config_id: '3910307729262069',
-        response_type: 'code',
+        response_type: 'token',  // 改为 token，直接返回 access token
         override_default_response_type: true,
         extras: {
           setup: {},
