@@ -3,6 +3,8 @@ import User from '../models/User';
 
 const WHATSAPP_API_URL = process.env.WHATSAPP_API_URL || 'https://graph.facebook.com';
 const API_VERSION = process.env.WHATSAPP_API_VERSION || 'v18.0';
+const ACCESS_TOKEN = process.env.WHATSAPP_ACCESS_TOKEN!;
+const PHONE_NUMBER_ID = process.env.WHATSAPP_PHONE_NUMBER_ID!;
 
 // Helper function to get user's WhatsApp config
 export const getUserWhatsAppConfig = async (userId: string) => {
