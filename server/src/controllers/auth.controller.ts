@@ -160,8 +160,8 @@ export const embeddedSignup = async (req: Request, res: Response) => {
         params: {
           client_id: process.env.META_APP_ID,
           client_secret: process.env.META_APP_SECRET,
-          code: code,
-          redirect_uri: `${process.env.SERVER_URL || 'https://wa.acestartechsi.com'}/api/auth/facebook/callback`
+          code: code
+          // Note: redirect_uri is not required for Embedded Signup
         }
       });
       
