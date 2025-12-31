@@ -73,8 +73,7 @@ async function fixEmbeddedSignupUser() {
       UPDATE users 
       SET 
         whatsapp_account_id = :wabaId,
-        phone_number_id = :phoneNumberId,
-        updated_at = NOW()
+        phone_number_id = :phoneNumberId
       WHERE email = :email
       RETURNING id, name, email, whatsapp_account_id, phone_number_id;
     `, {
