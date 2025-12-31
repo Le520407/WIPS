@@ -75,7 +75,7 @@ async function mergeDuplicateUsers() {
       SET 
         phone_number_id = '${duplicateUser.phone_number_id}',
         access_token = (SELECT access_token FROM users WHERE id = '${duplicateUser.id}'),
-        updated_at = NOW()
+        "updatedAt" = NOW()
       WHERE id = '${testUser.id}';
     `);
     console.log('✅ 配置已更新');
